@@ -1,0 +1,10 @@
+src/
+cli/
+.design/
+sessions/
+.github/
+index.html
+tsconfig.json
+vite.config.ts
+CLAUDE.md
+*.tgz

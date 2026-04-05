@@ -3,18 +3,33 @@
   "version": "0.1.0",
   "description": "Browser overlay that lets you annotate UI elements and send structured feedback to AI coding agents",
   "main": "dist/promptotype.iife.js",
+  "bin": {
+    "promptotype": "npm/cli.js"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "build:cli": "vite build && bun build cli/index.ts --outfile dist/promptotype --compile",
     "build:cli:all": "vite build && bun build cli/index.ts --outfile dist/promptotype-darwin-arm64 --compile --target=bun-darwin-arm64 && bun build cli/index.ts --outfile dist/promptotype-darwin-x64 --compile --target=bun-darwin-x64 && bun build cli/index.ts --outfile dist/promptotype-linux-x64 --compile --target=bun-linux-x64 && bun build cli/index.ts --outfile dist/promptotype-linux-arm64 --compile --target=bun-linux-arm64",
-    "cli": "bun run cli/index.ts"
+    "cli": "bun run cli/index.ts",
+    "postinstall": "node npm/postinstall.js"
   },
-  "keywords": ["design", "annotation", "ai", "cli", "browser"],
-  "author": "",
+  "files": [
+    "dist/promptotype.iife.js",
+    "npm/postinstall.js",
+    "npm/cli.js",
+    "bin/"
+  ],
+  "keywords": ["design", "annotation", "ai", "cli", "browser", "overlay", "promptotype"],
+  "author": "Nikos Kollaros",
   "license": "ISC",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/niforiskollaros/promptotype.git"
+  },
+  "homepage": "https://github.com/niforiskollaros/promptotype",
   "devDependencies": {
     "typescript": "^6.0.2",
     "vite": "^8.0.3"
