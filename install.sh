@@ -1,6 +1,6 @@
 #!/bin/bash
 # Promptotype installer
-# Usage: curl -fsSL https://locusai.design/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/niforiskollaros/promptotype/main/install.sh | bash
 
 set -euo pipefail
 
