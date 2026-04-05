@@ -59,10 +59,11 @@ export function isProxyMode(): boolean {
 export async function submitToProxy(markdown: string): Promise<boolean> {
   try {
     const origin = (window as any).__PT_PROXY_ORIGIN__ || window.location.origin;
+    const token = (window as any).__PT_SESSION_TOKEN__ || '';
     const res = await fetch(`${origin}/__pt__/api/annotations`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ markdown }),
+      body: JSON.stringify({ markdown, token }),
     });
     return res.ok;
   } catch {

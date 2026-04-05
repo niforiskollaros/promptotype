@@ -11,13 +11,6 @@
 // @ts-ignore — Bun-specific import attribute
 import OVERLAY_JS from '../dist/promptotype.iife.js' with { type: 'text' };
 
-// Script tag injected before </body> in HTML responses
-const INJECT_TAG = `<script src="/__pt__/overlay.js"></script>\n<script>
-// Signal to the overlay that we're in proxy mode
-window.__PT_PROXY__ = true;
-window.__PT_PROXY_ORIGIN__ = location.origin;
-</script>`;
-
 export interface ProxyServerOptions {
   targetUrl: string;
   port: number;
@@ -30,6 +23,15 @@ export function startProxyServer(options: ProxyServerOptions): {
 } {
   const { targetUrl, port, onAnnotations } = options;
   const target = new URL(targetUrl);
+
+  // Generate an unguessable session token to authenticate overlay submissions
+  const sessionToken = crypto.randomUUID();
+
+  // Bootstrap served as a separate JS file (not inline) for CSP compatibility
+  const BOOTSTRAP_JS = `window.__PT_PROXY__=true;window.__PT_PROXY_ORIGIN__=location.origin;window.__PT_SESSION_TOKEN__="${sessionToken}";`;
+
+  // Script tags injected before </body> — both are external, no inline scripts
+  const INJECT_TAG = `<script src="/__pt__/overlay.js"></script>\n<script src="/__pt__/bootstrap.js"></script>`;
 
   const server = Bun.serve({
     port,
@@ -54,6 +56,13 @@ export function startProxyServer(options: ProxyServerOptions): {
         });
       }
 
+      // --- Serve bootstrap JS (CSP-safe, no inline scripts) ---
+      if (url.pathname === '/__pt__/bootstrap.js') {
+        return new Response(BOOTSTRAP_JS, {
+          headers: { 'Content-Type': 'application/javascript; charset=utf-8' },
+        });
+      }
+
       // --- Health check (used by overlay to detect proxy mode) ---
       if (url.pathname === '/__pt__/health') {
         return new Response(JSON.stringify({ status: 'ok', proxy: true }), {
@@ -61,10 +70,19 @@ export function startProxyServer(options: ProxyServerOptions): {
         });
       }
 
-      // --- Annotations API ---
+      // --- Annotations API (requires session token) ---
       if (url.pathname === '/__pt__/api/annotations' && req.method === 'POST') {
         try {
           const body = await req.json();
+
+          // Validate session token to prevent forged submissions
+          if (body.token !== sessionToken) {
+            return new Response(JSON.stringify({ error: 'Invalid session token' }), {
+              status: 403,
+              headers: { 'Content-Type': 'application/json' },
+            });
+          }
+
           const markdown = body.markdown as string;
           if (!markdown) {
             return new Response(JSON.stringify({ error: 'Missing markdown field' }), {
@@ -116,11 +134,12 @@ export function startProxyServer(options: ProxyServerOptions): {
             html += INJECT_TAG;
           }
 
-          // Build response headers, skip problematic ones
+          // Build response headers, skip problematic ones and CSP (we inject scripts)
           const resHeaders = new Headers();
           for (const [key, value] of proxyRes.headers.entries()) {
             const lower = key.toLowerCase();
             if (lower === 'content-encoding' || lower === 'content-length' || lower === 'transfer-encoding') continue;
+            if (lower === 'content-security-policy' || lower === 'content-security-policy-report-only') continue;
             resHeaders.set(key, value);
           }
 

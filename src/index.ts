@@ -181,8 +181,8 @@ function openReview(): void {
       // Re-render the panel
       openReview();
     },
-    // onCopy / onSubmit
-    async () => {
+    // onCopy / onSubmit — returns true if successful
+    async (): Promise<boolean> => {
       const md = generateMarkdown(annotations);
 
       if (isProxyMode()) {
@@ -190,11 +190,13 @@ function openReview(): void {
         const sent = await submitToProxy(md);
         if (sent) {
           showToast(`Sent ${annotations.length} annotation${annotations.length !== 1 ? 's' : ''} to AI agent — you can close this tab`);
+          return true;
         } else {
           // Fallback to clipboard if proxy POST fails
           const copied = await copyToClipboard(md);
           showToast(copied ? 'Proxy unavailable — copied to clipboard instead' : 'Submit failed — check console');
           console.log('--- Promptotype Output ---\n\n' + md);
+          return copied;
         }
       } else {
         // Standalone mode: copy to clipboard
@@ -205,6 +207,7 @@ function openReview(): void {
           showToast('Copy failed — check console for output');
           console.log('--- Promptotype Output ---\n\n' + md);
         }
+        return success;
       }
     },
     // onBack

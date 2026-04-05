@@ -29,7 +29,7 @@ export function showReviewPanel(
   annotations: Annotation[],
   onEdit: (id: string) => void,
   onDelete: (id: string) => void,
-  onCopy: () => void,
+  onCopy: () => Promise<boolean>,
   onBack: () => void,
 ): void {
   hideReviewPanel();
@@ -300,35 +300,42 @@ export function showReviewPanel(
     copyBtn.addEventListener('mouseleave', () => { copyBtn.style.background = tokens.color.primary[600]; copyBtn.style.transform = 'translateY(0)'; });
     copyBtn.addEventListener('mousedown', () => { copyBtn.style.transform = 'scale(0.98)'; });
     copyBtn.addEventListener('mouseup', () => { copyBtn.style.transform = 'translateY(-1px)'; });
-    copyBtn.addEventListener('click', () => {
+    copyBtn.addEventListener('click', async () => {
       const proxy = isProxyMode();
-      onCopy();
-      copyBtn.innerHTML = `
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-          <polyline points="20 6 9 17 4 12"/>
-        </svg>
-        ${proxy ? 'Sent!' : 'Copied!'}
-      `;
-      copyBtn.style.background = tokens.color.success;
+
+      // Show loading state while awaiting the async operation
+      copyBtn.disabled = true;
+      copyBtn.style.opacity = '0.7';
+      const originalHtml = copyBtn.innerHTML;
+
+      const success = await onCopy();
+
+      copyBtn.disabled = false;
+      copyBtn.style.opacity = '1';
+
+      if (success) {
+        copyBtn.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          ${proxy ? 'Sent!' : 'Copied!'}
+        `;
+        copyBtn.style.background = tokens.color.success;
+      } else {
+        copyBtn.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+          Failed
+        `;
+        copyBtn.style.background = tokens.color.error;
+      }
+
       setTimeout(() => {
         if (copyBtn.isConnected) {
-          if (proxy) {
-            copyBtn.innerHTML = `
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <line x1="22" y1="2" x2="11" y2="13"/>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-              </svg>
-              Submit to Agent
-            `;
-          } else {
-            copyBtn.innerHTML = `
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <rect x="9" y="9" width="13" height="13" rx="2"/>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-              </svg>
-              Copy to Clipboard
-            `;
-          }
+          copyBtn.innerHTML = originalHtml;
           copyBtn.style.background = tokens.color.primary[600];
         }
       }, 2000);
