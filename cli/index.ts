@@ -3,15 +3,22 @@
  * DesignAnnotator CLI
  *
  * Usage:
- *   design-annotator <url> [--port <port>] [--no-open] [--timeout <seconds>] [--json]
+ *   design-annotator [url] [--port <port>] [--no-open] [--timeout <seconds>] [--json]
+ *
+ * If no URL is provided, scans common dev server ports and auto-connects.
  *
  * Examples:
- *   design-annotator http://localhost:3000
+ *   design-annotator                              # Auto-detect running dev server
+ *   design-annotator http://localhost:3000         # Explicit URL
  *   design-annotator http://localhost:5173 --port 4000
- *   design-annotator http://localhost:3000 --no-open --timeout 600
  */
 
 import { startProxyServer } from './server';
+
+// --- Common dev server ports to scan ---
+const COMMON_PORTS = [
+  3000, 3001, 3333, 4173, 4200, 5173, 5174, 8000, 8080, 8888,
+];
 
 // --- Parse arguments ---
 const args = process.argv.slice(2);
@@ -41,16 +48,18 @@ const helpFlag = getFlag('help') || getFlag('h');
 const port = parseInt(getOption('port', '4000'), 10);
 const timeout = parseInt(getOption('timeout', '0'), 10); // 0 = no timeout
 
-// Remaining arg is the target URL
-const targetUrl = args[0];
+// Remaining arg is the target URL (optional now)
+const targetUrlArg = args[0];
 
-if (helpFlag || !targetUrl) {
+if (helpFlag) {
   const bin = 'design-annotator';
   console.error(`
   DesignAnnotator — Annotate UI elements, send structured feedback to AI agents
 
   Usage:
-    ${bin} <url> [options]
+    ${bin} [url] [options]
+
+  If no URL is provided, auto-detects running dev servers on common ports.
 
   Options:
     --port <port>      Proxy server port (default: 4000)
@@ -60,22 +69,104 @@ if (helpFlag || !targetUrl) {
     --help, -h         Show this help
 
   Examples:
-    ${bin} http://localhost:3000
+    ${bin}                                  # Auto-detect dev server
+    ${bin} http://localhost:3000            # Explicit URL
     ${bin} http://localhost:5173 --port 4000
-    ${bin} http://localhost:3000 --no-open --timeout 300
+    ${bin} --no-open --timeout 300
   `);
-  process.exit(helpFlag ? 0 : 1);
+  process.exit(0);
 }
 
-// Validate URL
-let parsedUrl: URL;
-try {
-  parsedUrl = new URL(targetUrl);
-} catch {
-  console.error(`Error: Invalid URL "${targetUrl}"`);
-  console.error('Provide a full URL like http://localhost:3000');
-  process.exit(1);
+// --- Auto-detect dev servers ---
+async function scanPort(p: number): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 500);
+    const res = await fetch(`http://localhost:${p}`, {
+      signal: controller.signal,
+      redirect: 'manual',
+    });
+    clearTimeout(id);
+    // Any response (even redirects) means something is running
+    return true;
+  } catch {
+    return false;
+  }
 }
+
+async function detectServers(): Promise<string[]> {
+  console.error(`\x1b[35m▸\x1b[0m Scanning for dev servers...`);
+  const results = await Promise.all(
+    COMMON_PORTS.map(async (p) => ({ port: p, alive: await scanPort(p) }))
+  );
+  return results.filter(r => r.alive).map(r => `http://localhost:${r.port}`);
+}
+
+async function pickServer(servers: string[]): Promise<string> {
+  console.error(`\x1b[35m▸\x1b[0m Found ${servers.length} dev server${servers.length !== 1 ? 's' : ''}:\n`);
+  servers.forEach((s, i) => {
+    console.error(`  \x1b[1m${i + 1}.\x1b[0m ${s}`);
+  });
+  console.error('');
+
+  // Read from stdin
+  process.stderr.write(`\x1b[35m▸\x1b[0m Which one? (1): `);
+
+  const choice = await new Promise<string>((resolve) => {
+    let data = '';
+    process.stdin.setRawMode?.(false);
+    process.stdin.resume();
+    process.stdin.once('data', (chunk) => {
+      data = chunk.toString().trim();
+      process.stdin.pause();
+      resolve(data);
+    });
+  });
+
+  const index = (choice === '' ? 1 : parseInt(choice, 10)) - 1;
+  if (index < 0 || index >= servers.length || isNaN(index)) {
+    console.error(`\x1b[31m▸ Invalid choice\x1b[0m`);
+    process.exit(1);
+  }
+  return servers[index];
+}
+
+// --- Resolve target URL ---
+let resolvedUrl: string;
+
+if (targetUrlArg) {
+  // Explicit URL provided
+  try {
+    new URL(targetUrlArg);
+    resolvedUrl = targetUrlArg;
+  } catch {
+    // Maybe they just passed a port number like "3000"
+    const asPort = parseInt(targetUrlArg, 10);
+    if (!isNaN(asPort) && asPort > 0 && asPort < 65536) {
+      resolvedUrl = `http://localhost:${asPort}`;
+    } else {
+      console.error(`\x1b[31m▸ Invalid URL or port:\x1b[0m "${targetUrlArg}"`);
+      console.error('  Provide a full URL (http://localhost:3000) or just a port number (3000)');
+      process.exit(1);
+    }
+  }
+} else {
+  // Auto-detect
+  const servers = await detectServers();
+
+  if (servers.length === 0) {
+    console.error(`\x1b[31m▸ No dev servers found\x1b[0m on ports: ${COMMON_PORTS.join(', ')}`);
+    console.error('  Start your dev server first, or provide a URL explicitly.');
+    process.exit(1);
+  } else if (servers.length === 1) {
+    resolvedUrl = servers[0];
+    console.error(`\x1b[35m▸\x1b[0m Auto-detected: \x1b[1m${resolvedUrl}\x1b[0m\n`);
+  } else {
+    resolvedUrl = await pickServer(servers);
+  }
+}
+
+const parsedUrl = new URL(resolvedUrl);
 
 // --- Start proxy ---
 let resolveAnnotations: ((markdown: string) => void) | null = null;
