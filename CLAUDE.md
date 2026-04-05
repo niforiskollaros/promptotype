@@ -6,12 +6,14 @@ A browser overlay tool that lets anyone select UI elements in a locally running 
 
 **Inspirations:** React Grab (element selection), plannotator (annotation UI + CLI integration)
 **Repo:** https://github.com/niforiskollaros/promptotype
+**npm:** [promptotype](https://www.npmjs.com/package/promptotype)
+**Landing page:** https://locusai.design
 
 ## Architecture
 
-**Vanilla TypeScript** — single IIFE bundle (~64KB, ~13KB gzip), zero framework dependencies. Works in any browser, on any app.
+**Vanilla TypeScript** — single IIFE bundle (~66KB, ~14KB gzip), zero framework dependencies. Works in any browser, on any app.
 
-Built with **Vite** (IIFE library mode). No React, no framework.
+Built with **Vite** (IIFE library mode). No React, no framework. CLI is a **Bun-compiled binary** that proxies your app and injects the overlay.
 
 ```
 src/
@@ -25,18 +27,57 @@ src/
 ├── pin-markers.ts           # Numbered pin markers on annotated elements
 ├── status-bar.ts            # Bottom bar with annotation count + Review & Submit button
 ├── review-panel.ts          # Right side panel listing all annotations + copy to clipboard
-└── output.ts                # Markdown generation + clipboard API
+└── output.ts                # Markdown generation + clipboard API + proxy submission
+
+cli/
+├── index.ts                 # CLI entry — arg parsing, auto-detect dev servers, open browser
+├── server.ts                # Proxy server — inject overlay, session token auth, annotation API
+└── promptotype.md           # Slash command definition for AI coding agents
+
+npm/
+├── postinstall.js           # Downloads platform binary from GitHub release
+└── cli.js                   # Thin Node.js wrapper that execs the binary
+
+site/
+├── index.html               # Landing page (locusai.design)
+└── vercel.json              # Rewrite /install.sh to raw GitHub
 ```
+
+## Distribution
+
+```bash
+# Install via curl
+curl -fsSL https://locusai.design/install.sh | bash
+
+# Install via npm
+npm install -g promptotype
+
+# Run
+promptotype http://localhost:3000
+
+# From Claude Code / Codex / Gemini CLI
+/promptotype http://localhost:3000
+```
+
+## Releasing
+
+Push a tag — CI builds all 4 platform binaries and creates a GitHub release automatically:
+
+```bash
+git tag v0.x.x && git push origin v0.x.x
+```
+
+For npm, bump version in package.json and run `npm publish`.
 
 ## User Flow
 
 ```
-Activate (Cmd+Shift+D or DA button)
+Activate (Cmd+Shift+D or floating button)
   → INSPECT: hover highlights elements with box model (margin/padding), Alt+Scroll for depth
   → Click element → ANNOTATE: popover shows properties + optional prompt textarea
   → Save → pin marker appears, continue selecting more
   → "Review & Submit" → REVIEW: side panel with all annotations
-  → "Copy to Clipboard" → structured markdown for AI agents
+  → Submit to Agent (proxy mode) or Copy to Clipboard (standalone)
 ```
 
 ## Key Design Decisions
@@ -51,6 +92,13 @@ Activate (Cmd+Shift+D or DA button)
 - **Purple accent** (#7C3AED primary, full 50-900 ramp) — unlikely to clash with inspected apps
 - **Dark warm surfaces** (#161618 base, not pure black) — distinguishes tool from inspected app
 - **Respects prefers-reduced-motion** — all animations disabled
+
+## Proxy Security
+
+- **Session token**: Each proxy session generates `crypto.randomUUID()`, injected via `/__pt__/bootstrap.js`, required on annotation POST (403 without it)
+- **CSP handling**: Proxy strips CSP headers from target app responses to allow overlay injection
+- **Bootstrap**: Served as external JS file (not inline) for CSP compatibility
+- **Honest UI**: Submit button awaits async result before showing success or error state
 
 ## Design Token System
 
@@ -70,45 +118,25 @@ All UI references `src/styles.ts` — never hardcode values in components.
 - Spacing: padding, margin (with box model visualization on highlight)
 - Alignment: text-align, display, align-items
 
-## CLI Integration Roadmap
-
-| Phase | Approach | Status |
-|-------|----------|--------|
-| 1. Clipboard | Copy markdown, paste into CLI | Done |
-| 2. Local API + bookmarklet | CLI starts API server, overlay POSTs annotations | Next |
-| 3. Proxy plugin (plannotator-style) | `/promptotype localhost:3000` — proxy + inject overlay | Planned |
-| 4. MCP server + browser extension | Extension captures, MCP delivers to any agent | Future |
-
-### How plannotator works (reference for our integration)
-
-- Slash command `.md` file in `~/.claude/commands/` with `!` backtick to execute binary
-- Binary starts local HTTP server (Bun.serve), opens browser, blocks on Promise
-- Browser SPA makes fetch() calls to same origin (GET /api/plan, POST /api/feedback)
-- POST resolves the Promise (resolveDecision()), CLI prints to stdout, Claude captures it
-- Single binary with embedded UI (vite-plugin-singlefile + Bun import with { type: "text" })
-- Stdout is the contract — stays silent until user submits, stderr for diagnostics
-- Install script drops binary to ~/.local/bin/ and slash command .md to ~/.claude/commands/
-- Supports Claude Code, Codex, Copilot CLI, Gemini CLI, OpenCode, Pi
-
-### Option 4+6 detail (MCP + browser extension)
-
-These work together: extension is the capture layer (element selection, annotations in browser), MCP server is the delivery layer (exposes get_annotations() tool to any MCP-compatible agent). Connected via native messaging. Extension can be loaded unpacked for local dev — no store review needed.
-
 ## Commands
 
 ```bash
-npm run dev      # Start dev server with sample app (index.html) on port 3333
-npm run build    # Build dist/promptotype.iife.js
-npm run preview  # Preview production build
+npm run dev          # Start dev server with sample app (index.html) on port 3333
+npm run build        # Build dist/promptotype.iife.js
+npm run build:cli    # Build CLI binary for current platform
+npm run build:cli:all  # Build for all 4 platforms (darwin/linux × arm64/x64)
+npm run preview      # Preview production build
 ```
 
-## Design Workflow
+## Future Roadmap
 
-The `.design/` directory contains the DSP workflow:
-- `.design/phases/DISCOVERY.md` — Design brief with 14 must-have requirements
-- `.design/phases/UX-DECISIONS.md` — Full UX spec with 7 components + all states
-- `.design/STATE.md` — Current workflow position (UX + wireframe execution complete)
-- `.design/config.json` — Workflow settings
+| Feature | Status |
+|---------|--------|
+| MCP server + browser extension | Future — extension captures, MCP delivers to any agent |
+| Screenshot capture per annotation | Future |
+| Design token mapping (Tailwind detection) | Future |
+| Component detection (React/Vue) | Future |
+| Figma comparison mode | Future |
 
 ## Session History
 
@@ -127,3 +155,4 @@ Session summaries are in `sessions/`:
 - System font stack for UI, monospace for code/selectors/hex values
 - SVG icons inline (no icon library dependency)
 - Animations use CSS keyframes defined in `injectGlobalStyles()`
+- Proxy routes use `/__pt__/` prefix, window globals use `__PT_*`

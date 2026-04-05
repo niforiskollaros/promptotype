@@ -29,3 +29,15 @@
 **Context**: User may want to annotate an element with just a color change or just to flag it, without writing a prompt.
 **Decision**: Prompt textarea is optional. Annotations can be saved with just a color suggestion or even nothing (properties-only).
 **Rationale**: Reduces friction. Sometimes the extracted properties + a color hex are enough context for the AI agent.
+
+## 2026-04-05: Public Personal Repo for Distribution
+
+**Context**: Enterprise repo (SignalOrg) is private, can't serve public release assets or install scripts.
+**Decision**: Migrated to niforiskollaros/promptotype as the public distribution repo.
+**Rationale**: Simplest path to public distribution without enterprise policy issues. Install script, npm, and CI all work against the public repo.
+
+## 2026-04-05: Session Token for Proxy Endpoint
+
+**Context**: Codex adversarial review flagged that any JS on the proxied page could forge annotation submissions to the CLI.
+**Decision**: Generate a crypto.randomUUID() per proxy session, inject via bootstrap.js, validate on every annotation POST.
+**Rationale**: The overlay is the only legitimate submitter. The token is injected only into the bootstrap file served by the proxy, not accessible to the target app's own scripts.
