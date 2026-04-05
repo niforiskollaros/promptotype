@@ -6,7 +6,7 @@ import { showPopover, hidePopover, isPopoverOpen } from './annotation-popover';
 import { updateAllPins, clearAllPins, onPinClick } from './pin-markers';
 import { updateStatusBar, destroyStatusBar } from './status-bar';
 import { showReviewPanel, hideReviewPanel, isReviewOpen } from './review-panel';
-import { generateMarkdown, copyToClipboard } from './output';
+import { generateMarkdown, copyToClipboard, isProxyMode, submitToProxy } from './output';
 import { tokens, injectGlobalStyles } from './styles';
 
 // --- State ---
@@ -181,15 +181,30 @@ function openReview(): void {
       // Re-render the panel
       openReview();
     },
-    // onCopy
+    // onCopy / onSubmit
     async () => {
       const md = generateMarkdown(annotations);
-      const success = await copyToClipboard(md);
-      if (success) {
-        showToast(`Copied ${annotations.length} annotation${annotations.length !== 1 ? 's' : ''} — paste into your AI agent`);
+
+      if (isProxyMode()) {
+        // Proxy mode: POST to the CLI server, which prints to stdout
+        const sent = await submitToProxy(md);
+        if (sent) {
+          showToast(`Sent ${annotations.length} annotation${annotations.length !== 1 ? 's' : ''} to AI agent — you can close this tab`);
+        } else {
+          // Fallback to clipboard if proxy POST fails
+          const copied = await copyToClipboard(md);
+          showToast(copied ? 'Proxy unavailable — copied to clipboard instead' : 'Submit failed — check console');
+          console.log('--- DesignAnnotator Output ---\n\n' + md);
+        }
       } else {
-        showToast('Copy failed — check console for output');
-        console.log('--- DesignAnnotator Output ---\n\n' + md);
+        // Standalone mode: copy to clipboard
+        const success = await copyToClipboard(md);
+        if (success) {
+          showToast(`Copied ${annotations.length} annotation${annotations.length !== 1 ? 's' : ''} — paste into your AI agent`);
+        } else {
+          showToast('Copy failed — check console for output');
+          console.log('--- DesignAnnotator Output ---\n\n' + md);
+        }
       }
     },
     // onBack

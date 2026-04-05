@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:cli": "vite build && bun build cli/index.ts --outfile dist/design-annotator --compile",
+    "build:cli:all": "vite build && bun build cli/index.ts --outfile dist/design-annotator-darwin-arm64 --compile --target=bun-darwin-arm64 && bun build cli/index.ts --outfile dist/design-annotator-darwin-x64 --compile --target=bun-darwin-x64 && bun build cli/index.ts --outfile dist/design-annotator-linux-x64 --compile --target=bun-linux-x64 && bun build cli/index.ts --outfile dist/design-annotator-linux-arm64 --compile --target=bun-linux-arm64",
+    "cli": "bun run cli/index.ts"
   },
   "keywords": ["design", "annotation", "ai", "cli", "browser"],
   "author": "",

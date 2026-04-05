@@ -44,3 +44,28 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     return success;
   }
 }
+
+/**
+ * Check if we're running through the DesignAnnotator proxy.
+ */
+export function isProxyMode(): boolean {
+  return !!(window as any).__DA_PROXY__;
+}
+
+/**
+ * Submit annotations to the proxy server's API endpoint.
+ * Returns true if successful, false otherwise.
+ */
+export async function submitToProxy(markdown: string): Promise<boolean> {
+  try {
+    const origin = (window as any).__DA_PROXY_ORIGIN__ || window.location.origin;
+    const res = await fetch(`${origin}/__da__/api/annotations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ markdown }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
