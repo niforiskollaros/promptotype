@@ -7,6 +7,7 @@ import { updateAllPins, clearAllPins, onPinClick } from './pin-markers';
 import { updateStatusBar, destroyStatusBar } from './status-bar';
 import { showReviewPanel, hideReviewPanel, isReviewOpen } from './review-panel';
 import { generateMarkdown, copyToClipboard } from './output';
+import { tokens, injectGlobalStyles } from './styles';
 
 // --- State ---
 let mode: Mode = 'inactive';
@@ -15,26 +16,7 @@ let hoveredElement: HTMLElement | null = null;
 let depthStack: HTMLElement[] = [];
 let depthIndex = 0;
 
-// --- CSS Animations ---
-function injectStyles(): void {
-  if (document.getElementById('da-global-styles')) return;
-  const style = document.createElement('style');
-  style.id = 'da-global-styles';
-  style.textContent = `
-    @keyframes da-pulse {
-      0% { opacity: 1; }
-      100% { opacity: 0; transform: scale(1.05); }
-    }
-    @keyframes da-slide-in {
-      from { transform: translateX(100%); }
-      to { transform: translateX(0); }
-    }
-    .da-inspect-cursor, .da-inspect-cursor * {
-      cursor: crosshair !important;
-    }
-  `;
-  document.head.appendChild(style);
-}
+// (Global styles are now in styles.ts)
 
 // --- Depth Traversal ---
 function buildDepthStack(el: HTMLElement): HTMLElement[] {
@@ -89,7 +71,7 @@ function isElementAnnotated(el: HTMLElement): boolean {
 function activate(): void {
   if (mode !== 'inactive') return;
   mode = 'inspect';
-  injectStyles();
+  injectGlobalStyles();
   document.documentElement.classList.add('da-inspect-cursor');
   updateStatusBar(annotations.length, openReview, deactivate);
   updateAllPins(annotations);
@@ -226,22 +208,45 @@ function showToast(message: string): void {
     bottom: 60px;
     left: 50%;
     transform: translateX(-50%);
-    background: #1E1E1E;
-    color: #E0E0E0;
-    border: 1px solid #333;
-    padding: 10px 20px;
-    border-radius: 6px;
-    font: 13px -apple-system, BlinkMacSystemFont, sans-serif;
-    z-index: 2147483647;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-    animation: da-slide-in 0.2s ease-out;
+    background: ${tokens.color.surface.raised};
+    color: ${tokens.color.text.primary};
+    border: 1px solid ${tokens.color.surface.border};
+    padding: ${tokens.space[3]} ${tokens.space[5]};
+    border-radius: ${tokens.radius.lg};
+    font: ${tokens.font.weight.medium} ${tokens.font.size.sm}/${tokens.font.lineHeight.tight} ${tokens.font.family};
+    z-index: ${tokens.z.toast};
+    box-shadow: ${tokens.shadow.lg};
+    animation: da-slide-up 0.2s ease-out;
+    display: flex;
+    align-items: center;
+    gap: ${tokens.space[2]};
+    overflow: hidden;
   `;
-  toast.textContent = message;
+  toast.innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${tokens.color.success}" stroke-width="2.5" stroke-linecap="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    <span>${message}</span>
+  `;
+
+  // Auto-dismiss progress bar
+  const progress = document.createElement('div');
+  progress.style.cssText = `
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    background: ${tokens.color.primary[600]};
+    animation: da-toast-progress 3s linear forwards;
+  `;
+  toast.style.position = 'fixed'; // re-assert for the absolute child
+  toast.appendChild(progress);
+
   document.body.appendChild(toast);
   setTimeout(() => {
     toast.style.opacity = '0';
-    toast.style.transition = 'opacity 0.3s';
-    setTimeout(() => toast.remove(), 300);
+    toast.style.transition = `opacity ${tokens.transition.slow}`;
+    setTimeout(() => toast.remove(), 200);
   }, 3000);
 }
 
@@ -374,31 +379,46 @@ function createToggleButton(): void {
   btn.id = 'da-toggle-button';
   btn.style.cssText = `
     position: fixed;
-    bottom: 16px;
-    left: 16px;
-    width: 40px;
-    height: 40px;
-    background: rgba(124, 58, 237, 0.8);
+    bottom: ${tokens.space[4]};
+    left: ${tokens.space[4]};
+    width: 44px;
+    height: 44px;
+    background: ${tokens.color.primary[600]};
     color: white;
-    border-radius: 8px;
-    font: 700 12px/40px -apple-system, BlinkMacSystemFont, sans-serif;
-    text-align: center;
+    border-radius: ${tokens.radius.lg};
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     z-index: 2147483630;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    transition: all 0.15s ease;
+    box-shadow: ${tokens.shadow.md};
+    transition: background ${tokens.transition.fast}, transform ${tokens.transition.spring}, box-shadow ${tokens.transition.normal};
     user-select: none;
   `;
-  btn.textContent = 'DA';
+  btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <rect x="3" y="3" width="18" height="18" rx="3"/>
+    <circle cx="8" cy="8" r="2" fill="currentColor"/>
+    <line x1="13" y1="8" x2="19" y2="8" stroke-linecap="round"/>
+    <line x1="7" y1="13" x2="17" y2="13" stroke-linecap="round"/>
+    <line x1="7" y1="17" x2="14" y2="17" stroke-linecap="round"/>
+  </svg>`;
   btn.title = 'Toggle DesignAnnotator (Cmd+Shift+D)';
 
   btn.addEventListener('mouseenter', () => {
-    btn.style.background = 'rgba(124, 58, 237, 1)';
-    btn.style.transform = 'scale(1.05)';
+    btn.style.background = tokens.color.primary[700];
+    btn.style.transform = 'scale(1.08)';
+    btn.style.boxShadow = `${tokens.shadow.lg}, ${tokens.shadow.glow}`;
   });
   btn.addEventListener('mouseleave', () => {
-    btn.style.background = 'rgba(124, 58, 237, 0.8)';
+    btn.style.background = tokens.color.primary[600];
     btn.style.transform = 'scale(1)';
+    btn.style.boxShadow = tokens.shadow.md;
+  });
+  btn.addEventListener('mousedown', () => {
+    btn.style.transform = 'scale(0.95)';
+  });
+  btn.addEventListener('mouseup', () => {
+    btn.style.transform = 'scale(1.08)';
   });
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -414,8 +434,8 @@ function init(): void {
   createToggleButton();
   console.log(
     '%c DesignAnnotator %c Ready — Cmd+Shift+D to activate',
-    'background:#7C3AED;color:white;padding:2px 6px;border-radius:3px;font-weight:600',
-    'color:#7C3AED',
+    `background:${tokens.color.primary[600]};color:white;padding:2px 8px;border-radius:4px;font-weight:600`,
+    `color:${tokens.color.primary[500]}`,
   );
 }
 

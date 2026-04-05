@@ -13,9 +13,14 @@ export function generateMarkdown(annotations: Annotation[]): string {
     md += `- Padding: ${s.spacing.padding}\n`;
     md += `- Alignment: ${s.alignment.textAlign}, ${s.alignment.display}, align-items: ${s.alignment.alignItems}\n`;
     md += `\n`;
-    md += `**Prompt:** ${a.prompt}\n`;
+    if (a.prompt) {
+      md += `**Prompt:** ${a.prompt}\n`;
+    }
     if (a.colorSuggestion) {
       md += `\n**Suggested color:** ${a.colorSuggestion}\n`;
+    }
+    if (!a.prompt && !a.colorSuggestion) {
+      md += `**Prompt:** Review this element\n`;
     }
     md += `\n---\n\n`;
   });
