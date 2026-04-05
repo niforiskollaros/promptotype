@@ -1,4 +1,4 @@
-# Design Roadmap: DesignAnnotator
+# Design Roadmap: Promptotype
 
 > Created: 2026-04-05
 > Target Completion: TBD

@@ -34,7 +34,7 @@ Progress: [█████░░░░░] 50%
 - **Phase:** Execute (wireframe)
 
 ### What Happened
-Designed complete interaction flow for DesignAnnotator with three modes: Inspect (hover+click elements), Annotate (inline popover with extracted properties + prompt), Review (side panel with batch summary + copy to clipboard). Specified 7 components with full state coverage. Resolved all open questions from discovery.
+Designed complete interaction flow for Promptotype with three modes: Inspect (hover+click elements), Annotate (inline popover with extracted properties + prompt), Review (side panel with batch summary + copy to clipboard). Specified 7 components with full state coverage. Resolved all open questions from discovery.
 
 ### Accumulated Context
 

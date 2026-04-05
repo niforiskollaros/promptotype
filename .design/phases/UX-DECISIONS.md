@@ -29,7 +29,7 @@ components_specified:
   - ReviewSidePanel
 ---
 
-# UX Decisions: DesignAnnotator
+# UX Decisions: Promptotype
 
 ## User Flow
 
@@ -112,7 +112,7 @@ components_specified:
 | State | Behavior | Visual Indicator |
 |-------|----------|------------------|
 | Default (off) | Tool inactive, app behaves normally | Small semi-transparent floating button bottom-left: "DA" monogram |
-| Hover | Button becomes fully opaque | Tooltip: "Activate DesignAnnotator (Cmd+Shift+D)" |
+| Hover | Button becomes fully opaque | Tooltip: "Activate Promptotype (Cmd+Shift+D)" |
 | Active (on) | Inspect mode enabled, cursor changes to crosshair | Button solid with accent color, subtle pulse. Faint overlay tint on page signals inspect mode |
 | Has annotations | Shows annotation count | Badge with count on toggle button |
 
@@ -233,7 +233,7 @@ components_specified:
 **States:**
 | State | Behavior | Visual Indicator |
 |-------|----------|------------------|
-| No annotations | Tool active indicator | "DesignAnnotator active . Click elements to annotate . Esc to exit" |
+| No annotations | Tool active indicator | "Promptotype active . Click elements to annotate . Esc to exit" |
 | Has annotations | Count + CTA | "3 annotations . [Review & Submit]" - button prominent |
 | Hover count | -- | Clickable, opens review panel |
 

@@ -1,6 +1,6 @@
 import { tokens } from './styles';
 
-const BAR_ID = 'da-status-bar';
+const BAR_ID = 'pt-status-bar';
 
 let bar: HTMLDivElement | null = null;
 
@@ -24,7 +24,7 @@ function ensureBar(): HTMLDivElement {
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-top: 1px solid ${tokens.color.surface.borderSubtle};
-    animation: da-slide-up 0.2s ease-out;
+    animation: pt-slide-up 0.2s ease-out;
   `;
   document.body.appendChild(bar);
   return bar;
@@ -54,7 +54,7 @@ export function updateStatusBar(count: number, onReview: () => void, onExit: () 
         font-weight: ${tokens.font.weight.semibold};
         font-size: ${tokens.font.size.sm};
         letter-spacing: 0.3px;
-      ">DesignAnnotator</span>
+      ">Promptotype</span>
     </div>
 
     <div style="width:1px;height:16px;background:${tokens.color.surface.border};"></div>
@@ -98,7 +98,7 @@ export function updateStatusBar(count: number, onReview: () => void, onExit: () 
     </span>
 
     ${count > 0 ? `
-      <button id="da-review-btn" style="
+      <button id="pt-review-btn" style="
         background: ${tokens.color.primary[600]};
         color: white;
         border: none;
@@ -121,7 +121,7 @@ export function updateStatusBar(count: number, onReview: () => void, onExit: () 
   `;
 
   if (count > 0) {
-    const btn = b.querySelector<HTMLButtonElement>('#da-review-btn')!;
+    const btn = b.querySelector<HTMLButtonElement>('#pt-review-btn')!;
     btn.addEventListener('click', onReview);
     btn.addEventListener('mouseenter', () => {
       btn.style.background = tokens.color.primary[700];

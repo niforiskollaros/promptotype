@@ -1,16 +1,16 @@
 #!/usr/bin/env bun
 /**
- * DesignAnnotator CLI
+ * Promptotype CLI
  *
  * Usage:
- *   design-annotator [url] [--port <port>] [--no-open] [--timeout <seconds>] [--json]
+ *   promptotype [url] [--port <port>] [--no-open] [--timeout <seconds>] [--json]
  *
  * If no URL is provided, scans common dev server ports and auto-connects.
  *
  * Examples:
- *   design-annotator                              # Auto-detect running dev server
- *   design-annotator http://localhost:3000         # Explicit URL
- *   design-annotator http://localhost:5173 --port 4000
+ *   promptotype                              # Auto-detect running dev server
+ *   promptotype http://localhost:3000         # Explicit URL
+ *   promptotype http://localhost:5173 --port 4000
  */
 
 import { startProxyServer } from './server';
@@ -52,9 +52,9 @@ const timeout = parseInt(getOption('timeout', '0'), 10); // 0 = no timeout
 const targetUrlArg = args[0];
 
 if (helpFlag) {
-  const bin = 'design-annotator';
+  const bin = 'promptotype';
   console.error(`
-  DesignAnnotator — Annotate UI elements, send structured feedback to AI agents
+  Promptotype — Annotate UI elements, send structured feedback to AI agents
 
   Usage:
     ${bin} [url] [options]
@@ -183,7 +183,7 @@ const { server, url: proxyUrl } = startProxyServer({
 });
 
 // Stderr for diagnostics (stdout is reserved for the annotation output)
-console.error(`\x1b[35m▸ DesignAnnotator\x1b[0m proxy running at \x1b[1m${proxyUrl}\x1b[0m`);
+console.error(`\x1b[35m▸ Promptotype\x1b[0m proxy running at \x1b[1m${proxyUrl}\x1b[0m`);
 console.error(`\x1b[35m▸\x1b[0m Proxying → ${parsedUrl.toString()}`);
 console.error(`\x1b[35m▸\x1b[0m Waiting for annotations... (Cmd+Shift+D to activate overlay)\n`);
 

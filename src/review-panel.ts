@@ -3,7 +3,7 @@ import { tokens } from './styles';
 import { pulseHighlight } from './highlight-overlay';
 import { isProxyMode } from './output';
 
-const PANEL_ID = 'da-review-panel';
+const PANEL_ID = 'pt-review-panel';
 
 let panel: HTMLDivElement | null = null;
 
@@ -50,7 +50,7 @@ export function showReviewPanel(
     display: flex;
     flex-direction: column;
     box-shadow: ${tokens.shadow.xl};
-    animation: da-slide-in-right 0.25s ease-out;
+    animation: pt-slide-in-right 0.25s ease-out;
   `;
 
   // Header
@@ -74,7 +74,7 @@ export function showReviewPanel(
           font-weight:${tokens.font.weight.medium};
         ">${annotations.length} annotation${annotations.length !== 1 ? 's' : ''}</span>
       </div>
-      <button id="da-review-close" style="
+      <button id="pt-review-close" style="
         background:${tokens.color.surface.elevated};
         border:none;
         color:${tokens.color.text.tertiary};
@@ -114,7 +114,7 @@ export function showReviewPanel(
     annotations.forEach((a, i) => {
       const promptText = a.prompt.replace(/</g, '&lt;').replace(/>/g, '&gt;');
       cardsHtml += `
-        <div class="da-review-card" data-id="${a.id}" style="
+        <div class="pt-review-card" data-id="${a.id}" style="
           background:${tokens.color.surface.raised};
           border:1px solid ${tokens.color.surface.border};
           border-radius:${tokens.radius.lg};
@@ -141,7 +141,7 @@ export function showReviewPanel(
                 font-family:${tokens.font.mono};
               ">${a.selector}</span>
             </div>
-            <button class="da-delete-btn" data-id="${a.id}" style="
+            <button class="pt-delete-btn" data-id="${a.id}" style="
               background:transparent;
               border:none;
               color:${tokens.color.text.tertiary};
@@ -208,7 +208,7 @@ export function showReviewPanel(
           ` : ''}
 
           <div style="text-align:right;">
-            <button class="da-edit-btn" data-id="${a.id}" style="
+            <button class="pt-edit-btn" data-id="${a.id}" style="
               background:${tokens.color.surface.elevated};
               border:1px solid ${tokens.color.surface.border};
               border-radius:${tokens.radius.md};
@@ -234,7 +234,7 @@ export function showReviewPanel(
       gap:${tokens.space[3]};
       flex-shrink:0;
     ">
-      <button id="da-back-btn" style="
+      <button id="pt-back-btn" style="
         flex:1;
         background:transparent;
         border:1px solid ${tokens.color.surface.border};
@@ -246,7 +246,7 @@ export function showReviewPanel(
         transition:background ${tokens.transition.fast}, border-color ${tokens.transition.fast};
       ">Back to Inspect</button>
       ${annotations.length > 0 ? `
-        <button id="da-copy-btn" style="
+        <button id="pt-copy-btn" style="
           flex:1;
           background:${tokens.color.primary[600]};
           border:none;
@@ -284,18 +284,18 @@ export function showReviewPanel(
 
   // --- Event Handlers ---
 
-  const closeBtn = panel.querySelector<HTMLButtonElement>('#da-review-close')!;
+  const closeBtn = panel.querySelector<HTMLButtonElement>('#pt-review-close')!;
   closeBtn.addEventListener('mouseenter', () => { closeBtn.style.background = tokens.color.surface.overlay; closeBtn.style.color = tokens.color.text.primary; });
   closeBtn.addEventListener('mouseleave', () => { closeBtn.style.background = tokens.color.surface.elevated; closeBtn.style.color = tokens.color.text.tertiary; });
   closeBtn.addEventListener('click', onBack);
 
-  const backBtn = panel.querySelector<HTMLButtonElement>('#da-back-btn')!;
+  const backBtn = panel.querySelector<HTMLButtonElement>('#pt-back-btn')!;
   backBtn.addEventListener('mouseenter', () => { backBtn.style.background = tokens.color.surface.elevated; backBtn.style.borderColor = tokens.color.text.tertiary; });
   backBtn.addEventListener('mouseleave', () => { backBtn.style.background = 'transparent'; backBtn.style.borderColor = tokens.color.surface.border; });
   backBtn.addEventListener('click', onBack);
 
   if (annotations.length > 0) {
-    const copyBtn = panel.querySelector<HTMLButtonElement>('#da-copy-btn')!;
+    const copyBtn = panel.querySelector<HTMLButtonElement>('#pt-copy-btn')!;
     copyBtn.addEventListener('mouseenter', () => { copyBtn.style.background = tokens.color.primary[700]; copyBtn.style.transform = 'translateY(-1px)'; });
     copyBtn.addEventListener('mouseleave', () => { copyBtn.style.background = tokens.color.primary[600]; copyBtn.style.transform = 'translateY(0)'; });
     copyBtn.addEventListener('mousedown', () => { copyBtn.style.transform = 'scale(0.98)'; });
@@ -336,7 +336,7 @@ export function showReviewPanel(
   }
 
   // Card interactions
-  panel.querySelectorAll('.da-review-card').forEach(card => {
+  panel.querySelectorAll('.pt-review-card').forEach(card => {
     const cardEl = card as HTMLElement;
     cardEl.addEventListener('mouseenter', () => {
       cardEl.style.borderColor = tokens.color.primary[600] + '66';
@@ -348,7 +348,7 @@ export function showReviewPanel(
     });
     cardEl.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
-      if (target.closest('.da-edit-btn') || target.closest('.da-delete-btn')) return;
+      if (target.closest('.pt-edit-btn') || target.closest('.pt-delete-btn')) return;
       const id = cardEl.dataset.id!;
       const annotation = annotations.find(a => a.id === id);
       if (annotation?.element?.isConnected) {
@@ -359,7 +359,7 @@ export function showReviewPanel(
   });
 
   // Edit buttons
-  panel.querySelectorAll('.da-edit-btn').forEach(btn => {
+  panel.querySelectorAll('.pt-edit-btn').forEach(btn => {
     const el = btn as HTMLElement;
     el.addEventListener('mouseenter', () => { el.style.background = tokens.color.surface.overlay; el.style.borderColor = tokens.color.text.tertiary; });
     el.addEventListener('mouseleave', () => { el.style.background = tokens.color.surface.elevated; el.style.borderColor = tokens.color.surface.border; });
@@ -367,7 +367,7 @@ export function showReviewPanel(
   });
 
   // Delete buttons
-  panel.querySelectorAll('.da-delete-btn').forEach(btn => {
+  panel.querySelectorAll('.pt-delete-btn').forEach(btn => {
     const el = btn as HTMLElement;
     el.addEventListener('mouseenter', () => { el.style.background = tokens.color.surface.elevated; el.style.color = tokens.color.error; });
     el.addEventListener('mouseleave', () => { el.style.background = 'transparent'; el.style.color = tokens.color.text.tertiary; });

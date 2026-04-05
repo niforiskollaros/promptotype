@@ -1,4 +1,4 @@
-# DesignAnnotator
+# Promptotype
 
 ## What This Is
 
@@ -76,7 +76,7 @@ All UI references `src/styles.ts` — never hardcode values in components.
 |-------|----------|--------|
 | 1. Clipboard | Copy markdown, paste into CLI | Done |
 | 2. Local API + bookmarklet | CLI starts API server, overlay POSTs annotations | Next |
-| 3. Proxy plugin (plannotator-style) | `/design-annotate localhost:3000` — proxy + inject overlay | Planned |
+| 3. Proxy plugin (plannotator-style) | `/promptotype localhost:3000` — proxy + inject overlay | Planned |
 | 4. MCP server + browser extension | Extension captures, MCP delivers to any agent | Future |
 
 ### How plannotator works (reference for our integration)
@@ -98,7 +98,7 @@ These work together: extension is the capture layer (element selection, annotati
 
 ```bash
 npm run dev      # Start dev server with sample app (index.html) on port 3333
-npm run build    # Build dist/design-annotator.iife.js
+npm run build    # Build dist/promptotype.iife.js
 npm run preview  # Preview production build
 ```
 
@@ -118,7 +118,7 @@ Session summaries are in `sessions/`:
 
 ## Code Conventions
 
-- All UI elements use `da-` prefix for IDs and classes to avoid conflicts
+- All UI elements use `pt-` prefix for IDs and classes to avoid conflicts
 - `isOwnElement()` check prevents the tool from inspecting its own UI
 - Events use capture phase (`true`) to intercept before the app's handlers
 - All overlay z-indices use the scale from `tokens.z` (near max int)

@@ -1,6 +1,6 @@
 import { tokens } from './styles';
 
-const BAR_ID = 'da-breadcrumb-bar';
+const BAR_ID = 'pt-breadcrumb-bar';
 
 let bar: HTMLDivElement | null = null;
 
@@ -42,7 +42,7 @@ function buildPath(el: HTMLElement): HTMLElement[] {
 function tagLabel(el: HTMLElement): string {
   const tag = el.tagName.toLowerCase();
   const cls = el.className && typeof el.className === 'string'
-    ? '.' + el.className.trim().split(/\s+/).filter(c => !c.startsWith('da-')).slice(0, 1).join('.')
+    ? '.' + el.className.trim().split(/\s+/).filter(c => !c.startsWith('pt-')).slice(0, 1).join('.')
     : '';
   const id = el.id ? `#${el.id}` : '';
   return tag + id + (cls !== '.' ? cls : '');

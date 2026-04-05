@@ -17,11 +17,11 @@ key_requirements:
   - REQ-06: Structured output to AI coding agents (clipboard/CLI)
 ---
 
-# Design Brief: DesignAnnotator
+# Design Brief: Promptotype
 
 ## Executive Summary
 
-DesignAnnotator is a browser overlay that lets anyone select UI elements in a locally running app, see their computed design properties, write prompts per element, batch multiple annotations, review them, and send structured feedback to AI coding agents. It replaces the screenshot-paste-describe workflow with precise, structured, point-and-click design feedback.
+Promptotype is a browser overlay that lets anyone select UI elements in a locally running app, see their computed design properties, write prompts per element, batch multiple annotations, review them, and send structured feedback to AI coding agents. It replaces the screenshot-paste-describe workflow with precise, structured, point-and-click design feedback.
 
 ## Problem Statement
 
@@ -41,7 +41,7 @@ DesignAnnotator is a browser overlay that lets anyone select UI elements in a lo
 
 ### Usage Context
 - **When/where:** During local development, reviewing an AI-generated app running in the browser (localhost)
-- **Surrounding workflow:** User prompts AI → AI generates/modifies code → App runs locally → User reviews in browser → **DesignAnnotator captures feedback** → Feedback goes back to AI → Repeat
+- **Surrounding workflow:** User prompts AI → AI generates/modifies code → App runs locally → User reviews in browser → **Promptotype captures feedback** → Feedback goes back to AI → Repeat
 - **Frequency:** Multiple times per session, potentially dozens of annotations per review cycle
 
 ## Current State Journey Map
@@ -58,7 +58,7 @@ DesignAnnotator is a browser overlay that lets anyone select UI elements in a lo
 ## Future State Journey Map
 
 ```
-[See issues in running app] → [Activate DesignAnnotator] → [Click element → see properties → write prompt] → [Repeat for more elements] → [Review all annotations] → [Submit to AI agent] → [AI makes all changes at once]
+[See issues in running app] → [Activate Promptotype] → [Click element → see properties → write prompt] → [Repeat for more elements] → [Review all annotations] → [Submit to AI agent] → [AI makes all changes at once]
 ```
 
 ## Requirements

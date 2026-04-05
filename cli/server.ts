@@ -1,21 +1,21 @@
 /**
  * Proxy server that sits between the browser and the target app.
  * - Forwards all HTTP requests to the target
- * - Injects the DesignAnnotator overlay into HTML responses
- * - Serves the overlay JS from memory at /__da__/overlay.js
+ * - Injects the Promptotype overlay into HTML responses
+ * - Serves the overlay JS from memory at /__pt__/overlay.js
  * - Handles WebSocket forwarding for HMR (hot module replacement)
- * - Exposes POST /__da__/api/annotations for the overlay to submit
+ * - Exposes POST /__pt__/api/annotations for the overlay to submit
  */
 
 // Embed the overlay IIFE at build time — Bun resolves this import as a text string
 // @ts-ignore — Bun-specific import attribute
-import OVERLAY_JS from '../dist/design-annotator.iife.js' with { type: 'text' };
+import OVERLAY_JS from '../dist/promptotype.iife.js' with { type: 'text' };
 
 // Script tag injected before </body> in HTML responses
-const INJECT_TAG = `<script src="/__da__/overlay.js"></script>\n<script>
+const INJECT_TAG = `<script src="/__pt__/overlay.js"></script>\n<script>
 // Signal to the overlay that we're in proxy mode
-window.__DA_PROXY__ = true;
-window.__DA_PROXY_ORIGIN__ = location.origin;
+window.__PT_PROXY__ = true;
+window.__PT_PROXY_ORIGIN__ = location.origin;
 </script>`;
 
 export interface ProxyServerOptions {
@@ -48,21 +48,21 @@ export function startProxyServer(options: ProxyServerOptions): {
       }
 
       // --- Serve overlay JS from memory ---
-      if (url.pathname === '/__da__/overlay.js') {
+      if (url.pathname === '/__pt__/overlay.js') {
         return new Response(OVERLAY_JS, {
           headers: { 'Content-Type': 'application/javascript; charset=utf-8' },
         });
       }
 
       // --- Health check (used by overlay to detect proxy mode) ---
-      if (url.pathname === '/__da__/health') {
+      if (url.pathname === '/__pt__/health') {
         return new Response(JSON.stringify({ status: 'ok', proxy: true }), {
           headers: { 'Content-Type': 'application/json' },
         });
       }
 
       // --- Annotations API ---
-      if (url.pathname === '/__da__/api/annotations' && req.method === 'POST') {
+      if (url.pathname === '/__pt__/api/annotations' && req.method === 'POST') {
         try {
           const body = await req.json();
           const markdown = body.markdown as string;

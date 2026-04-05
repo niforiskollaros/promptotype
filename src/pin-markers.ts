@@ -1,7 +1,7 @@
 import { Annotation } from './types';
 import { tokens } from './styles';
 
-const PIN_CLASS = 'da-pin-marker';
+const PIN_CLASS = 'pt-pin-marker';
 const pins = new Map<string, HTMLDivElement>();
 
 export function addPin(annotation: Annotation, index: number): void {
@@ -30,7 +30,7 @@ export function addPin(annotation: Annotation, index: number): void {
     cursor: pointer;
     box-shadow: ${tokens.shadow.md}, 0 0 0 2px ${tokens.color.surface.base};
     transition: transform ${tokens.transition.spring}, box-shadow ${tokens.transition.normal};
-    animation: da-scale-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: pt-scale-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   `;
   pin.textContent = String(index + 1);
   pin.title = annotation.prompt

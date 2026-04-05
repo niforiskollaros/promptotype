@@ -1,4 +1,4 @@
-# Design Project: DesignAnnotator
+# Design Project: Promptotype
 
 > Created: 2026-04-05
 > Status: in_progress

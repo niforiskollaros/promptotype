@@ -53,9 +53,9 @@ function getElementAtDepth(x: number, y: number, goDeeper: boolean): HTMLElement
 // --- Helpers ---
 function isOwnElement(el: HTMLElement): boolean {
   return !!(
-    el.id?.startsWith('da-') ||
-    el.className?.toString().includes('da-') ||
-    el.closest('[id^="da-"]')
+    el.id?.startsWith('pt-') ||
+    el.className?.toString().includes('pt-') ||
+    el.closest('[id^="pt-"]')
   );
 }
 
@@ -72,7 +72,7 @@ function activate(): void {
   if (mode !== 'inactive') return;
   mode = 'inspect';
   injectGlobalStyles();
-  document.documentElement.classList.add('da-inspect-cursor');
+  document.documentElement.classList.add('pt-inspect-cursor');
   updateStatusBar(annotations.length, openReview, deactivate);
   updateAllPins(annotations);
 
@@ -93,7 +93,7 @@ function deactivate(): void {
   annotations = [];
   hoveredElement = null;
 
-  document.documentElement.classList.remove('da-inspect-cursor');
+  document.documentElement.classList.remove('pt-inspect-cursor');
   document.removeEventListener('mousemove', handleMouseMove, true);
   document.removeEventListener('click', handleClick, true);
   document.removeEventListener('wheel', handleWheel, true);
@@ -112,7 +112,7 @@ function deactivate(): void {
 function enterAnnotateMode(el: HTMLElement): void {
   mode = 'annotate';
   hideHighlight();
-  document.documentElement.classList.remove('da-inspect-cursor');
+  document.documentElement.classList.remove('pt-inspect-cursor');
 
   const styles = extractStyles(el);
   const existing = findAnnotation(el);
@@ -149,7 +149,7 @@ function enterAnnotateMode(el: HTMLElement): void {
 
 function returnToInspect(): void {
   mode = 'inspect';
-  document.documentElement.classList.add('da-inspect-cursor');
+  document.documentElement.classList.add('pt-inspect-cursor');
   updateAllPins(annotations);
   updateStatusBar(annotations.length, openReview, deactivate);
 }
@@ -159,7 +159,7 @@ function openReview(): void {
   hideHighlight();
   hideBreadcrumb();
   hidePopover();
-  document.documentElement.classList.remove('da-inspect-cursor');
+  document.documentElement.classList.remove('pt-inspect-cursor');
 
   showReviewPanel(
     annotations,
@@ -194,7 +194,7 @@ function openReview(): void {
           // Fallback to clipboard if proxy POST fails
           const copied = await copyToClipboard(md);
           showToast(copied ? 'Proxy unavailable — copied to clipboard instead' : 'Submit failed — check console');
-          console.log('--- DesignAnnotator Output ---\n\n' + md);
+          console.log('--- Promptotype Output ---\n\n' + md);
         }
       } else {
         // Standalone mode: copy to clipboard
@@ -203,7 +203,7 @@ function openReview(): void {
           showToast(`Copied ${annotations.length} annotation${annotations.length !== 1 ? 's' : ''} — paste into your AI agent`);
         } else {
           showToast('Copy failed — check console for output');
-          console.log('--- DesignAnnotator Output ---\n\n' + md);
+          console.log('--- Promptotype Output ---\n\n' + md);
         }
       }
     },
@@ -231,7 +231,7 @@ function showToast(message: string): void {
     font: ${tokens.font.weight.medium} ${tokens.font.size.sm}/${tokens.font.lineHeight.tight} ${tokens.font.family};
     z-index: ${tokens.z.toast};
     box-shadow: ${tokens.shadow.lg};
-    animation: da-slide-up 0.2s ease-out;
+    animation: pt-slide-up 0.2s ease-out;
     display: flex;
     align-items: center;
     gap: ${tokens.space[2]};
@@ -252,7 +252,7 @@ function showToast(message: string): void {
     left: 0;
     height: 2px;
     background: ${tokens.color.primary[600]};
-    animation: da-toast-progress 3s linear forwards;
+    animation: pt-toast-progress 3s linear forwards;
   `;
   toast.style.position = 'fixed'; // re-assert for the absolute child
   toast.appendChild(progress);
@@ -391,7 +391,7 @@ document.addEventListener('keydown', (e) => {
 // --- Floating Toggle Button ---
 function createToggleButton(): void {
   const btn = document.createElement('div');
-  btn.id = 'da-toggle-button';
+  btn.id = 'pt-toggle-button';
   btn.style.cssText = `
     position: fixed;
     bottom: ${tokens.space[4]};
@@ -417,7 +417,7 @@ function createToggleButton(): void {
     <line x1="7" y1="13" x2="17" y2="13" stroke-linecap="round"/>
     <line x1="7" y1="17" x2="14" y2="17" stroke-linecap="round"/>
   </svg>`;
-  btn.title = 'Toggle DesignAnnotator (Cmd+Shift+D)';
+  btn.title = 'Toggle Promptotype (Cmd+Shift+D)';
 
   btn.addEventListener('mouseenter', () => {
     btn.style.background = tokens.color.primary[700];
@@ -445,10 +445,10 @@ function createToggleButton(): void {
 
 // --- Init ---
 function init(): void {
-  if (document.getElementById('da-toggle-button')) return;
+  if (document.getElementById('pt-toggle-button')) return;
   createToggleButton();
   console.log(
-    '%c DesignAnnotator %c Ready — Cmd+Shift+D to activate',
+    '%c Promptotype %c Ready — Cmd+Shift+D to activate',
     `background:${tokens.color.primary[600]};color:white;padding:2px 8px;border-radius:4px;font-weight:600`,
     `color:${tokens.color.primary[500]}`,
   );
@@ -462,4 +462,4 @@ if (document.readyState === 'loading') {
 }
 
 // Expose API for programmatic use
-(window as any).DesignAnnotator = { activate, deactivate, toggle };
+(window as any).Promptotype = { activate, deactivate, toggle };

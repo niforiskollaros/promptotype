@@ -1,12 +1,12 @@
 #!/bin/bash
-# DesignAnnotator installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/SignalOrg/designottaror/main/install.sh | bash
+# Promptotype installer
+# Usage: curl -fsSL https://locusai.design/install.sh | bash
 
 set -euo pipefail
 
 REPO="SignalOrg/designottaror"
 BIN_DIR="${HOME}/.local/bin"
-BIN_NAME="design-annotator"
+BIN_NAME="promptotype"
 
 # Detect OS and architecture
 OS="$(uname -s)"
@@ -17,7 +17,7 @@ case "$OS" in
   Linux)  PLATFORM="linux" ;;
   *)
     echo "Error: Unsupported OS: $OS"
-    echo "DesignAnnotator supports macOS and Linux."
+    echo "Promptotype supports macOS and Linux."
     exit 1
     ;;
 esac
@@ -34,8 +34,8 @@ esac
 BINARY_NAME="${BIN_NAME}-${PLATFORM}-${ARCH_SUFFIX}"
 
 echo ""
-echo "  DesignAnnotator Installer"
-echo "  ========================="
+echo "  Promptotype Installer"
+echo "  ====================="
 echo ""
 echo "  Platform: ${PLATFORM}-${ARCH_SUFFIX}"
 echo ""
@@ -67,13 +67,13 @@ install_slash_command() {
 
   if [ -d "$(dirname "$CMD_DIR")" ]; then
     mkdir -p "$CMD_DIR"
-    cat > "${CMD_DIR}/design-annotate.md" << 'SLASHEOF'
+    cat > "${CMD_DIR}/promptotype.md" << 'SLASHEOF'
 Annotate UI elements in a running app and return structured design feedback.
 
 The user wants you to look at their running app and make design changes based on their annotations.
-Run the design-annotator proxy to let them select elements, describe what they want changed, and submit structured feedback.
+Run the Promptotype proxy to let them select elements, describe what they want changed, and submit structured feedback.
 
-`!~/.local/bin/design-annotator $ARGUMENTS`
+`!~/.local/bin/promptotype $ARGUMENTS`
 
 The output above contains structured design annotations with CSS selectors, current computed styles, and user prompts for each annotated element. Use these annotations to make the requested changes to the codebase.
 SLASHEOF
@@ -103,6 +103,6 @@ fi
 
 echo "  Done! Usage:"
 echo ""
-echo "    design-annotator http://localhost:3000"
-echo "    /design-annotate http://localhost:3000    (from Claude Code)"
+echo "    promptotype http://localhost:3000"
+echo "    /promptotype http://localhost:3000    (from Claude Code)"
 echo ""

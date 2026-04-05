@@ -54,7 +54,7 @@ See `sessions/DECISIONS.md` for detailed rationale.
 ## Next Steps
 
 1. **Build CLI integration (Option 3)**: Local API server + bookmarklet approach — overlay POSTs annotations to CLI server, CLI prints to stdout
-2. **Then Option 2**: Full proxy plugin (plannotator-style) with `/design-annotate localhost:3000` slash command
+2. **Then Option 2**: Full proxy plugin (plannotator-style) with `/promptotype localhost:3000` slash command
 3. **Future**: MCP server + browser extension (Option 4+6) for seamless multi-agent support
 4. **UX improvements to explore**: Undo/redo annotations, drag-to-reorder in review, screenshot capture per annotation
 

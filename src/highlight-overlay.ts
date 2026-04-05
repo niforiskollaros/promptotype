@@ -1,9 +1,9 @@
 import { tokens } from './styles';
 
-const OVERLAY_ID = 'da-highlight-overlay';
-const LABEL_ID = 'da-highlight-label';
-const MARGIN_ID = 'da-highlight-margin';
-const PADDING_ID = 'da-highlight-padding';
+const OVERLAY_ID = 'pt-highlight-overlay';
+const LABEL_ID = 'pt-highlight-label';
+const MARGIN_ID = 'pt-highlight-margin';
+const PADDING_ID = 'pt-highlight-padding';
 
 let overlay: HTMLDivElement | null = null;
 let label: HTMLDivElement | null = null;
@@ -174,7 +174,7 @@ export function pulseHighlight(el: HTMLElement): void {
     z-index: ${tokens.z.highlight};
     pointer-events: none;
     border-radius: ${tokens.radius.sm};
-    animation: da-pulse-highlight 0.6s ease-out forwards;
+    animation: pt-pulse-highlight 0.6s ease-out forwards;
   `;
   document.body.appendChild(pulse);
   setTimeout(() => pulse.remove(), 600);

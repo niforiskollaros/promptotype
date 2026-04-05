@@ -40,7 +40,7 @@ export function generateSelector(el: HTMLElement): string {
   const tag = el.tagName.toLowerCase();
   const id = el.id ? `#${el.id}` : '';
   const classes = el.className && typeof el.className === 'string'
-    ? '.' + el.className.trim().split(/\s+/).filter(c => !c.startsWith('da-')).slice(0, 2).join('.')
+    ? '.' + el.className.trim().split(/\s+/).filter(c => !c.startsWith('pt-')).slice(0, 2).join('.')
     : '';
 
   if (id) return `${tag}${id}`;

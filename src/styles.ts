@@ -1,4 +1,4 @@
-// Design tokens for DesignAnnotator
+// Design tokens for Promptotype
 // All overlay UI references these tokens — never hardcode values in components
 
 export const tokens = {
@@ -126,83 +126,83 @@ export const tokens = {
 
 // Inject global styles (animations, resets for DA elements)
 export function injectGlobalStyles(): void {
-  if (document.getElementById('da-global-styles')) return;
+  if (document.getElementById('pt-global-styles')) return;
   const style = document.createElement('style');
-  style.id = 'da-global-styles';
+  style.id = 'pt-global-styles';
   style.textContent = `
-    @keyframes da-fade-in {
+    @keyframes pt-fade-in {
       from { opacity: 0; }
       to { opacity: 1; }
     }
-    @keyframes da-fade-out {
+    @keyframes pt-fade-out {
       from { opacity: 1; }
       to { opacity: 0; }
     }
-    @keyframes da-slide-up {
+    @keyframes pt-slide-up {
       from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    @keyframes da-slide-in-right {
+    @keyframes pt-slide-in-right {
       from { transform: translateX(100%); }
       to { transform: translateX(0); }
     }
-    @keyframes da-slide-out-right {
+    @keyframes pt-slide-out-right {
       from { transform: translateX(0); }
       to { transform: translateX(100%); }
     }
-    @keyframes da-scale-in {
+    @keyframes pt-scale-in {
       from { opacity: 0; transform: scale(0.8); }
       to { opacity: 1; transform: scale(1); }
     }
-    @keyframes da-pulse-ring {
+    @keyframes pt-pulse-ring {
       0% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.4); }
       70% { box-shadow: 0 0 0 8px rgba(168, 85, 247, 0); }
       100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); }
     }
-    @keyframes da-pulse-highlight {
+    @keyframes pt-pulse-highlight {
       0% { opacity: 1; }
       100% { opacity: 0; transform: scale(1.02); }
     }
-    @keyframes da-shimmer {
+    @keyframes pt-shimmer {
       from { background-position: -200% 0; }
       to { background-position: 200% 0; }
     }
-    @keyframes da-toast-progress {
+    @keyframes pt-toast-progress {
       from { width: 100%; }
       to { width: 0%; }
     }
 
-    .da-inspect-cursor, .da-inspect-cursor * {
+    .pt-inspect-cursor, .pt-inspect-cursor * {
       cursor: crosshair !important;
     }
 
     /* Thin, transparent scrollbar — visible only on hover/scroll */
-    [id^="da-"] {
+    [id^="pt-"] {
       scrollbar-width: thin;
       scrollbar-color: transparent transparent;
     }
-    [id^="da-"]:hover {
+    [id^="pt-"]:hover {
       scrollbar-color: rgba(255,255,255,0.15) transparent;
     }
-    [id^="da-"]::-webkit-scrollbar {
+    [id^="pt-"]::-webkit-scrollbar {
       width: 5px;
     }
-    [id^="da-"]::-webkit-scrollbar-track {
+    [id^="pt-"]::-webkit-scrollbar-track {
       background: transparent;
     }
-    [id^="da-"]::-webkit-scrollbar-thumb {
+    [id^="pt-"]::-webkit-scrollbar-thumb {
       background-color: transparent;
       border-radius: 3px;
     }
-    [id^="da-"]:hover::-webkit-scrollbar-thumb {
+    [id^="pt-"]:hover::-webkit-scrollbar-thumb {
       background-color: rgba(255,255,255,0.15);
     }
-    [id^="da-"]::-webkit-scrollbar-thumb:hover {
+    [id^="pt-"]::-webkit-scrollbar-thumb:hover {
       background-color: rgba(255,255,255,0.3);
     }
 
     @media (prefers-reduced-motion: reduce) {
-      [id^="da-"], [class^="da-"] {
+      [id^="pt-"], [class^="pt-"] {
         animation-duration: 0.01ms !important;
         transition-duration: 0.01ms !important;
       }

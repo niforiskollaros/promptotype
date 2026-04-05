@@ -1,13 +1,13 @@
 import { ExtractedStyles, Annotation } from './types';
 import { tokens } from './styles';
 
-const POPOVER_ID = 'da-annotation-popover';
+const POPOVER_ID = 'pt-annotation-popover';
 
 let popover: HTMLDivElement | null = null;
 
 function colorChip(hex: string, label: string): string {
   return `
-    <div class="da-color-chip" data-hex="${hex}" style="
+    <div class="pt-color-chip" data-hex="${hex}" style="
       display:inline-flex;
       align-items:center;
       gap:${tokens.space[1]};
@@ -102,13 +102,13 @@ export function showPopover(
     font: ${tokens.font.weight.regular} ${tokens.font.size.base}/${tokens.font.lineHeight.normal} ${tokens.font.family};
     box-shadow: ${tokens.shadow.xl};
     overflow: hidden;
-    animation: da-scale-in 0.15s ease-out;
+    animation: pt-scale-in 0.15s ease-out;
   `;
 
   const selector = el.tagName.toLowerCase() +
     (el.id ? `#${el.id}` : '') +
     (el.className && typeof el.className === 'string'
-      ? '.' + el.className.trim().split(/\s+/).filter(c => !c.startsWith('da-')).slice(0, 2).join('.')
+      ? '.' + el.className.trim().split(/\s+/).filter(c => !c.startsWith('pt-')).slice(0, 2).join('.')
       : '');
 
   const fontInfo = `
@@ -166,7 +166,7 @@ export function showPopover(
         font-size:${tokens.font.size.sm};
         font-family:${tokens.font.mono};
       ">${selector}</span>
-      <button id="da-popover-close" style="
+      <button id="pt-popover-close" style="
         background:${tokens.color.surface.elevated};
         border:none;
         color:${tokens.color.text.tertiary};
@@ -195,7 +195,7 @@ export function showPopover(
     </div>
 
     <div style="padding:${tokens.space[4]};">
-      <label for="da-prompt" style="
+      <label for="pt-prompt" style="
         display:block;
         color:${tokens.color.text.secondary};
         font-size:${tokens.font.size.xs};
@@ -205,7 +205,7 @@ export function showPopover(
         margin-bottom:${tokens.space[2]};
       ">Your prompt</label>
       <textarea
-        id="da-prompt"
+        id="pt-prompt"
         rows="3"
         placeholder="What should change?"
         style="
@@ -224,14 +224,14 @@ export function showPopover(
       >${existing?.prompt ?? ''}</textarea>
 
       <div style="margin-top:${tokens.space[3]};display:flex;align-items:center;gap:${tokens.space[2]};">
-        <label for="da-color" style="color:${tokens.color.text.tertiary};font-size:${tokens.font.size.xs};white-space:nowrap;">Suggest color:</label>
+        <label for="pt-color" style="color:${tokens.color.text.tertiary};font-size:${tokens.font.size.xs};white-space:nowrap;">Suggest color:</label>
         <div style="
           position:relative;
           flex:1;
           display:flex;
           align-items:center;
         ">
-          <span id="da-color-preview" style="
+          <span id="pt-color-preview" style="
             position:absolute;
             left:8px;
             width:16px;
@@ -241,7 +241,7 @@ export function showPopover(
             background:transparent;
           "></span>
           <input
-            id="da-color"
+            id="pt-color"
             type="text"
             placeholder="#000000"
             value="${existing?.colorSuggestion ?? ''}"
@@ -277,7 +277,7 @@ export function showPopover(
           ">⌘↵</kbd> to save
         </span>
         <div style="display:flex;gap:${tokens.space[2]};">
-          <button id="da-popover-cancel" style="
+          <button id="pt-popover-cancel" style="
             background:transparent;
             border:1px solid ${tokens.color.surface.border};
             border-radius:${tokens.radius.md};
@@ -287,7 +287,7 @@ export function showPopover(
             cursor:pointer;
             transition:background ${tokens.transition.fast}, border-color ${tokens.transition.fast};
           ">Cancel</button>
-          <button id="da-popover-save" style="
+          <button id="pt-popover-save" style="
             background:${tokens.color.primary[600]};
             border:none;
             border-radius:${tokens.radius.md};
@@ -305,12 +305,12 @@ export function showPopover(
   document.body.appendChild(popover);
 
   // Focus textarea
-  const textarea = popover.querySelector<HTMLTextAreaElement>('#da-prompt')!;
-  const colorInput = popover.querySelector<HTMLInputElement>('#da-color')!;
-  const colorPreview = popover.querySelector<HTMLSpanElement>('#da-color-preview')!;
-  const closeBtn = popover.querySelector<HTMLButtonElement>('#da-popover-close')!;
-  const cancelBtn = popover.querySelector<HTMLButtonElement>('#da-popover-cancel')!;
-  const saveBtn = popover.querySelector<HTMLButtonElement>('#da-popover-save')!;
+  const textarea = popover.querySelector<HTMLTextAreaElement>('#pt-prompt')!;
+  const colorInput = popover.querySelector<HTMLInputElement>('#pt-color')!;
+  const colorPreview = popover.querySelector<HTMLSpanElement>('#pt-color-preview')!;
+  const closeBtn = popover.querySelector<HTMLButtonElement>('#pt-popover-close')!;
+  const cancelBtn = popover.querySelector<HTMLButtonElement>('#pt-popover-cancel')!;
+  const saveBtn = popover.querySelector<HTMLButtonElement>('#pt-popover-save')!;
 
   setTimeout(() => textarea.focus(), 50);
 
@@ -364,7 +364,7 @@ export function showPopover(
   });
 
   // Clickable color chips → pre-fill color suggestion
-  popover.querySelectorAll<HTMLDivElement>('.da-color-chip').forEach(chip => {
+  popover.querySelectorAll<HTMLDivElement>('.pt-color-chip').forEach(chip => {
     chip.addEventListener('mouseenter', () => { chip.style.borderColor = tokens.color.primary[500]; });
     chip.addEventListener('mouseleave', () => { chip.style.borderColor = tokens.color.surface.border; });
     chip.addEventListener('click', () => {

@@ -1,4 +1,4 @@
-# DesignAnnotator
+# Promptotype
 
 A browser overlay that lets you point at UI elements in a running app, see their computed design properties, write prompts, and send structured feedback to AI coding agents like Claude Code or Cursor.
 
@@ -77,7 +77,7 @@ Then open `http://localhost:3333` and press `Cmd+Shift+D` to activate.
 After building, add the script to any locally running app:
 
 ```html
-<script src="path/to/dist/design-annotator.iife.js"></script>
+<script src="path/to/dist/promptotype.iife.js"></script>
 ```
 
 Or use a bookmarklet (paste in browser console):
@@ -92,7 +92,7 @@ document.body.appendChild(s);
 
 | Shortcut | Action |
 |----------|--------|
-| `Cmd+Shift+D` | Toggle DesignAnnotator on/off |
+| `Cmd+Shift+D` | Toggle Promptotype on/off |
 | `Alt+Scroll` | Traverse element depth (parent/child) |
 | `Cmd+Enter` | Save annotation (in popover) |
 | `Escape` | Close popover / close review panel / deactivate |

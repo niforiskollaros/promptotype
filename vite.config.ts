@@ -5,8 +5,8 @@ export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
-      name: 'DesignAnnotator',
-      fileName: 'design-annotator',
+      name: 'Promptotype',
+      fileName: 'promptotype',
       formats: ['iife'],
     },
     outDir: 'dist',

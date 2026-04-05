@@ -1,4 +1,4 @@
-# Design Requirements: DesignAnnotator
+# Design Requirements: Promptotype
 
 > Created: 2026-04-05
 > Last Updated: 2026-04-05

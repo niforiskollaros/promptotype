@@ -1,14 +1,14 @@
 {
-  "name": "designannotator",
+  "name": "promptotype",
   "version": "0.1.0",
   "description": "Browser overlay that lets you annotate UI elements and send structured feedback to AI coding agents",
-  "main": "dist/design-annotator.iife.js",
+  "main": "dist/promptotype.iife.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "build:cli": "vite build && bun build cli/index.ts --outfile dist/design-annotator --compile",
-    "build:cli:all": "vite build && bun build cli/index.ts --outfile dist/design-annotator-darwin-arm64 --compile --target=bun-darwin-arm64 && bun build cli/index.ts --outfile dist/design-annotator-darwin-x64 --compile --target=bun-darwin-x64 && bun build cli/index.ts --outfile dist/design-annotator-linux-x64 --compile --target=bun-linux-x64 && bun build cli/index.ts --outfile dist/design-annotator-linux-arm64 --compile --target=bun-linux-arm64",
+    "build:cli": "vite build && bun build cli/index.ts --outfile dist/promptotype --compile",
+    "build:cli:all": "vite build && bun build cli/index.ts --outfile dist/promptotype-darwin-arm64 --compile --target=bun-darwin-arm64 && bun build cli/index.ts --outfile dist/promptotype-darwin-x64 --compile --target=bun-darwin-x64 && bun build cli/index.ts --outfile dist/promptotype-linux-x64 --compile --target=bun-linux-x64 && bun build cli/index.ts --outfile dist/promptotype-linux-arm64 --compile --target=bun-linux-arm64",
     "cli": "bun run cli/index.ts"
   },
   "keywords": ["design", "annotation", "ai", "cli", "browser"],
