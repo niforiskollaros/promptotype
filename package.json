@@ -1,0 +1,19 @@
+{
+  "name": "designannotator",
+  "version": "0.1.0",
+  "description": "Browser overlay that lets you annotate UI elements and send structured feedback to AI coding agents",
+  "main": "dist/design-annotator.iife.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": ["design", "annotation", "ai", "cli", "browser"],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "typescript": "^6.0.2",
+    "vite": "^8.0.3"
+  }
+}
