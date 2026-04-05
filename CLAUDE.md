@@ -5,7 +5,7 @@
 A browser overlay tool that lets anyone select UI elements in a locally running app, see their computed design properties, write prompts, batch multiple annotations, review them, and send structured feedback to AI coding agents.
 
 **Inspirations:** React Grab (element selection), plannotator (annotation UI + CLI integration)
-**Repo:** https://github.com/SignalOrg/promptotype
+**Repo:** https://github.com/niforiskollaros/promptotype
 
 ## Architecture
 

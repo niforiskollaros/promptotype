@@ -14,7 +14,7 @@
 - **All 7 components functional**: ActivationToggle, ElementHighlightOverlay, DepthBreadcrumbBar, AnnotationPopover, PinMarkers, BottomStatusBar, ReviewSidePanel
 - **Polished UI**: Full design token system, box model visualization, spring animations, thin scrollbars, reduced-motion support
 - **Tested end-to-end**: Successfully annotated elements and applied changes from structured markdown output
-- **Pushed to GitHub**: 2 commits on `main` at https://github.com/SignalOrg/promptotype
+- **Pushed to GitHub**: 2 commits on `main` at https://github.com/niforiskollaros/promptotype
 - **Researched plannotator internals**: Understood full architecture — HTTP server, embedded SPA, stdout contract, slash command registration
 
 ## Decisions
