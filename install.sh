@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-REPO="SignalOrg/designottaror"
+REPO="SignalOrg/promptotype"
 BIN_DIR="${HOME}/.local/bin"
 BIN_NAME="promptotype"
 
