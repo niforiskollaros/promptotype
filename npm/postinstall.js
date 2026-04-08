@@ -29,13 +29,6 @@ function getPlatformBinary() {
   process.exit(1);
 }
 
-function getVersion() {
-  const pkg = JSON.parse(
-    (await import('fs')).readFileSync(join(__dirname, '..', 'package.json'), 'utf8')
-  );
-  return pkg.version;
-}
-
 function download(url, dest) {
   return new Promise((resolve, reject) => {
     const follow = (url) => {
