@@ -143,6 +143,12 @@ export function startProxyServer(options: ProxyServerOptions): {
             resHeaders.set(key, value);
           }
 
+          // Prevent browser from caching proxied HTML — ensures switching targets
+          // on the same port always shows the current project, not a stale one
+          resHeaders.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+          resHeaders.set('Pragma', 'no-cache');
+          resHeaders.set('Expires', '0');
+
           return new Response(html, {
             status: proxyRes.status,
             statusText: proxyRes.statusText,
