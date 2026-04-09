@@ -1,12 +1,34 @@
 import { ExtractedStyles } from './types';
 
-function rgbToHex(rgb: string): string {
-  const match = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  if (!match) return rgb;
-  const r = parseInt(match[1]);
-  const g = parseInt(match[2]);
-  const b = parseInt(match[3]);
-  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+function rgbToHex(color: string): string {
+  // Handle rgb/rgba directly
+  const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (match) {
+    const r = parseInt(match[1]);
+    const g = parseInt(match[2]);
+    const b = parseInt(match[3]);
+    return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+  }
+
+  // For modern color formats (lab, oklch, oklab, lch, etc.),
+  // use canvas to force conversion to hex
+  try {
+    const ctx = document.createElement('canvas').getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = color;
+      const result = ctx.fillStyle; // Canvas normalizes to #rrggbb or rgb()
+      if (result.startsWith('#')) return result.toUpperCase();
+      // Canvas might return rgb() — recurse once
+      const rgbMatch = result.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+      if (rgbMatch) {
+        return '#' + [rgbMatch[1], rgbMatch[2], rgbMatch[3]]
+          .map(v => parseInt(v).toString(16).padStart(2, '0'))
+          .join('').toUpperCase();
+      }
+    }
+  } catch {}
+
+  return color; // Return as-is if conversion fails
 }
 
 export function extractStyles(el: HTMLElement): ExtractedStyles {

@@ -1,4 +1,5 @@
 import { tokens } from './styles';
+import { getUIRoot } from './context';
 
 const BAR_ID = 'pt-status-bar';
 
@@ -26,7 +27,7 @@ function ensureBar(): HTMLDivElement {
     border-top: 1px solid ${tokens.color.surface.borderSubtle};
     animation: pt-slide-up 0.2s ease-out;
   `;
-  document.body.appendChild(bar);
+  getUIRoot().appendChild(bar);
   return bar;
 }
 

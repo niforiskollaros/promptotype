@@ -1,4 +1,5 @@
 import { Annotation, Mode } from './types';
+import { initContext, getUIRoot, getShadowHost } from './context';
 import { extractStyles, generateSelector } from './extract-styles';
 import { showHighlight, hideHighlight, destroyHighlight } from './highlight-overlay';
 import { updateBreadcrumb, hideBreadcrumb, destroyBreadcrumb } from './breadcrumb-bar';
@@ -6,7 +7,7 @@ import { showPopover, hidePopover, isPopoverOpen } from './annotation-popover';
 import { updateAllPins, clearAllPins, onPinClick } from './pin-markers';
 import { updateStatusBar, destroyStatusBar } from './status-bar';
 import { showReviewPanel, hideReviewPanel, isReviewOpen } from './review-panel';
-import { generateMarkdown, copyToClipboard, isProxyMode, submitToProxy } from './output';
+import { generateMarkdown, copyToClipboard, isProxyMode, isMcpMode, submitToProxy, submitToMcp } from './output';
 import { tokens, injectGlobalStyles } from './styles';
 
 // --- State ---
@@ -52,6 +53,10 @@ function getElementAtDepth(x: number, y: number, goDeeper: boolean): HTMLElement
 
 // --- Helpers ---
 function isOwnElement(el: HTMLElement): boolean {
+  // In Shadow DOM mode, check if the element is the shadow host
+  const host = getShadowHost();
+  if (host && (el === host || host.contains(el))) return true;
+
   return !!(
     el.id?.startsWith('pt-') ||
     el.className?.toString().includes('pt-') ||
@@ -198,6 +203,19 @@ function openReview(): void {
           console.log('--- Promptotype Output ---\n\n' + md);
           return copied;
         }
+      } else if (isMcpMode()) {
+        // Extension + MCP mode: POST to local MCP server
+        const sent = await submitToMcp(md);
+        if (sent) {
+          showToast(`Sent ${annotations.length} annotation${annotations.length !== 1 ? 's' : ''} to AI agent via MCP`);
+          return true;
+        } else {
+          // Fallback to clipboard if MCP server unreachable
+          const copied = await copyToClipboard(md);
+          showToast(copied ? 'MCP server unavailable — copied to clipboard instead' : 'Submit failed — check console');
+          console.log('--- Promptotype Output ---\n\n' + md);
+          return copied;
+        }
       } else {
         // Standalone mode: copy to clipboard
         const success = await copyToClipboard(md);
@@ -260,7 +278,7 @@ function showToast(message: string): void {
   toast.style.position = 'fixed'; // re-assert for the absolute child
   toast.appendChild(progress);
 
-  document.body.appendChild(toast);
+  getUIRoot().appendChild(toast);
   setTimeout(() => {
     toast.style.opacity = '0';
     toast.style.transition = `opacity ${tokens.transition.slow}`;
@@ -443,12 +461,14 @@ function createToggleButton(): void {
     toggle();
   });
 
-  document.body.appendChild(btn);
+  getUIRoot().appendChild(btn);
 }
 
 // --- Init ---
 function init(): void {
-  if (document.getElementById('pt-toggle-button')) return;
+  // Check if already initialized (search in the correct root)
+  const root = getUIRoot();
+  if (root.querySelector('#pt-toggle-button')) return;
   createToggleButton();
   console.log(
     '%c Promptotype %c Ready — Cmd+Shift+D to activate',
@@ -457,12 +477,23 @@ function init(): void {
   );
 }
 
-// Auto-init when script loads
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
-} else {
+/**
+ * Initialize Promptotype with an optional Shadow DOM root.
+ * Called by the Chrome extension's content script.
+ */
+function initWithShadowDOM(shadowRoot: ShadowRoot, container: HTMLElement, host: HTMLElement): void {
+  initContext({ uiRoot: container, styleRoot: shadowRoot, shadowHost: host });
   init();
 }
 
+// Auto-init when script loads — skip if extension will call initWithShadowDOM
+if (!(window as any).__PT_MCP__) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+}
+
 // Expose API for programmatic use
-(window as any).Promptotype = { activate, deactivate, toggle };
+(window as any).Promptotype = { activate, deactivate, toggle, initWithShadowDOM };

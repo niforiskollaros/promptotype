@@ -13,6 +13,7 @@
     "build:cli": "vite build && bun build cli/index.ts --outfile dist/promptotype --compile",
     "build:cli:all": "vite build && bun build cli/index.ts --outfile dist/promptotype-darwin-arm64 --compile --target=bun-darwin-arm64 && bun build cli/index.ts --outfile dist/promptotype-darwin-x64 --compile --target=bun-darwin-x64 && bun build cli/index.ts --outfile dist/promptotype-linux-x64 --compile --target=bun-linux-x64 && bun build cli/index.ts --outfile dist/promptotype-linux-arm64 --compile --target=bun-linux-arm64",
     "cli": "bun run cli/index.ts",
+    "build:ext": "vite build && cp dist/promptotype.iife.js extension/overlay.js",
     "test:app": "bun test/mock-app/serve.ts",
     "test:app:nextjs": "bun test/mock-app/serve.ts --mode nextjs",
     "test:proxy": "bun run cli/index.ts http://localhost:3000",
@@ -24,7 +25,15 @@
     "npm/cli.js",
     "bin/"
   ],
-  "keywords": ["design", "annotation", "ai", "cli", "browser", "overlay", "promptotype"],
+  "keywords": [
+    "design",
+    "annotation",
+    "ai",
+    "cli",
+    "browser",
+    "overlay",
+    "promptotype"
+  ],
   "author": "Nikos Kollaros",
   "license": "ISC",
   "type": "module",
@@ -36,5 +45,8 @@
   "devDependencies": {
     "typescript": "^6.0.2",
     "vite": "^8.0.3"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
   }
 }

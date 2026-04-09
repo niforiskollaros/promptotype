@@ -1,4 +1,5 @@
 import { tokens } from './styles';
+import { getUIRoot } from './context';
 
 const OVERLAY_ID = 'pt-highlight-overlay';
 const LABEL_ID = 'pt-highlight-label';
@@ -23,7 +24,7 @@ function ensureElements(): void {
     background: ${tokens.color.highlight.margin};
     display: none;
   `;
-  document.body.appendChild(marginBox);
+  getUIRoot().appendChild(marginBox);
 
   // Main element border
   overlay = document.createElement('div');
@@ -38,7 +39,7 @@ function ensureElements(): void {
                 width ${tokens.transition.fast}, height ${tokens.transition.fast};
     display: none;
   `;
-  document.body.appendChild(overlay);
+  getUIRoot().appendChild(overlay);
 
   // Padding visualization (innermost)
   paddingBox = document.createElement('div');
@@ -50,7 +51,7 @@ function ensureElements(): void {
     background: ${tokens.color.highlight.padding};
     display: none;
   `;
-  document.body.appendChild(paddingBox);
+  getUIRoot().appendChild(paddingBox);
 
   // Label
   label = document.createElement('div');
@@ -69,7 +70,7 @@ function ensureElements(): void {
     box-shadow: ${tokens.shadow.sm};
     letter-spacing: 0.2px;
   `;
-  document.body.appendChild(label);
+  getUIRoot().appendChild(label);
 }
 
 export function showHighlight(el: HTMLElement, selector: string, isAnnotated: boolean): void {
@@ -176,7 +177,7 @@ export function pulseHighlight(el: HTMLElement): void {
     border-radius: ${tokens.radius.sm};
     animation: pt-pulse-highlight 0.6s ease-out forwards;
   `;
-  document.body.appendChild(pulse);
+  getUIRoot().appendChild(pulse);
   setTimeout(() => pulse.remove(), 600);
 }
 

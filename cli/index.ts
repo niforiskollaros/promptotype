@@ -4,6 +4,7 @@
  *
  * Usage:
  *   promptotype [url] [--port <port>] [--no-open] [--timeout <seconds>] [--json]
+ *   promptotype serve [--port <port>]    # Start MCP server for extension
  *
  * If no URL is provided, scans common dev server ports and auto-connects.
  *
@@ -11,9 +12,12 @@
  *   promptotype                              # Auto-detect running dev server
  *   promptotype http://localhost:3000         # Explicit URL
  *   promptotype http://localhost:5173 --port 4000
+ *   promptotype serve                        # Start MCP server (port 4100)
+ *   promptotype serve --port 4200            # Custom MCP port
  */
 
 import { startProxyServer } from './server';
+import { startMcpServer } from './mcp-server';
 
 // --- Common dev server ports to scan ---
 const COMMON_PORTS = [
@@ -61,8 +65,12 @@ if (helpFlag) {
 
   If no URL is provided, auto-detects running dev servers on common ports.
 
+  Commands:
+    ${bin} [url]                 Proxy mode (default) — inject overlay via HTTP proxy
+    ${bin} serve                 MCP server — for Chrome extension + AI agents
+
   Options:
-    --port <port>      Proxy server port (default: 4000)
+    --port <port>      Proxy port (default: 4000) or MCP port (default: 4100)
     --no-open          Don't auto-open the browser
     --timeout <secs>   Auto-exit after N seconds (default: no timeout)
     --json             Output JSON instead of markdown
@@ -72,9 +80,19 @@ if (helpFlag) {
     ${bin}                                  # Auto-detect dev server
     ${bin} http://localhost:3000            # Explicit URL
     ${bin} http://localhost:5173 --port 4000
-    ${bin} --no-open --timeout 300
+    ${bin} serve                            # Start MCP server on port 4100
+    ${bin} serve --port 4200                # Custom MCP port
   `);
   process.exit(0);
+}
+
+// --- MCP Server mode ---
+if (targetUrlArg === 'serve') {
+  // Use 4100 as default for serve mode (port var defaults to 4000 for proxy)
+  const mcpPort = port === 4000 ? 4100 : port;
+  startMcpServer({ port: mcpPort });
+  // Keep process alive — MCP server runs indefinitely
+  await new Promise(() => {}); // never resolves
 }
 
 // --- Auto-detect dev servers ---

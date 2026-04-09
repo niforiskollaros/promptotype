@@ -77,6 +77,11 @@
 | 2026-04-05 | UX | Bottom status bar + right review panel | Batch management always visible; review maintains spatial context | UX Phase |
 | 2026-04-05 | UX | Numbered pin markers on annotated elements | Clear, scannable, shows annotation order | UX Phase |
 | 2026-04-05 | UX | Structured markdown as clipboard output | AI agents parse markdown naturally; human-readable too | UX Phase |
+| 2026-04-09 | Discovery (P4) | Browser extension replaces proxy as primary injection | Proxy is inherently fragile — breaks on Next.js, Shiplex, etc. | User |
+| 2026-04-09 | Discovery (P4) | Shadow DOM for overlay isolation | Prevents CSS conflicts between overlay and host page | User |
+| 2026-04-09 | Discovery (P4) | MCP server (stdio) for agent delivery | Universal support — Codex, Cursor, Gemini, Claude Code, Copilot all support MCP | User |
+| 2026-04-09 | Discovery (P4) | Chrome only for v1 | Focus on one platform, expand later | User |
+| 2026-04-09 | Discovery (P4) | Ship extension + MCP together | Both needed: extension captures, MCP delivers | User |
 
 ## References
 

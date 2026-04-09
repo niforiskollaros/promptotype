@@ -1,5 +1,6 @@
 import { ExtractedStyles, Annotation } from './types';
 import { tokens } from './styles';
+import { getUIRoot } from './context';
 
 const POPOVER_ID = 'pt-annotation-popover';
 
@@ -82,18 +83,21 @@ export function showPopover(
   popover = document.createElement('div');
   popover.id = POPOVER_ID;
 
-  // Smart positioning
+  // Smart positioning — keep popover fully within viewport
   let left = rect.right + 16;
   let top = rect.top;
   if (left + 360 > window.innerWidth) left = rect.left - 360 - 16;
   if (left < 12) { left = Math.max(12, rect.left); top = rect.bottom + 16; }
   if (top + 460 > window.innerHeight) top = Math.max(12, window.innerHeight - 480);
+  if (top < 12) top = 12;
+  const maxHeight = window.innerHeight - top - 12;
 
   popover.style.cssText = `
     position: fixed;
     left: ${left}px;
     top: ${top}px;
     width: 340px;
+    max-height: ${maxHeight}px;
     z-index: ${tokens.z.popover};
     background: ${tokens.color.surface.raised};
     color: ${tokens.color.text.primary};
@@ -101,7 +105,7 @@ export function showPopover(
     border-radius: ${tokens.radius.xl};
     font: ${tokens.font.weight.regular} ${tokens.font.size.base}/${tokens.font.lineHeight.normal} ${tokens.font.family};
     box-shadow: ${tokens.shadow.xl};
-    overflow: hidden;
+    overflow-y: auto;
     animation: pt-scale-in 0.15s ease-out;
   `;
 
@@ -302,7 +306,7 @@ export function showPopover(
     </div>
   `;
 
-  document.body.appendChild(popover);
+  getUIRoot().appendChild(popover);
 
   // Focus textarea
   const textarea = popover.querySelector<HTMLTextAreaElement>('#pt-prompt')!;

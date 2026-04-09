@@ -1,5 +1,6 @@
 import { Annotation } from './types';
 import { tokens } from './styles';
+import { getUIRoot } from './context';
 
 const PIN_CLASS = 'pt-pin-marker';
 const pins = new Map<string, HTMLDivElement>();
@@ -46,7 +47,7 @@ export function addPin(annotation: Annotation, index: number): void {
     pin.style.boxShadow = `${tokens.shadow.md}, 0 0 0 2px ${tokens.color.surface.base}`;
   });
 
-  document.body.appendChild(pin);
+  getUIRoot().appendChild(pin);
   pins.set(annotation.id, pin);
 }
 

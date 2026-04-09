@@ -1,4 +1,5 @@
 import { tokens } from './styles';
+import { getUIRoot } from './context';
 
 const BAR_ID = 'pt-breadcrumb-bar';
 
@@ -25,7 +26,7 @@ function ensureBar(): HTMLDivElement {
     -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid ${tokens.color.surface.borderSubtle};
   `;
-  document.body.appendChild(bar);
+  getUIRoot().appendChild(bar);
   return bar;
 }
 

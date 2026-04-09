@@ -1,5 +1,6 @@
 // Design tokens for Promptotype
 // All overlay UI references these tokens — never hardcode values in components
+import { getStyleRoot } from './context';
 
 export const tokens = {
   // Colors — Purple accent with warm dark surfaces
@@ -126,7 +127,13 @@ export const tokens = {
 
 // Inject global styles (animations, resets for DA elements)
 export function injectGlobalStyles(): void {
-  if (document.getElementById('pt-global-styles')) return;
+  const root = getStyleRoot();
+  // Check if already injected in this root
+  if (root instanceof ShadowRoot) {
+    if (root.getElementById('pt-global-styles')) return;
+  } else {
+    if (document.getElementById('pt-global-styles')) return;
+  }
   const style = document.createElement('style');
   style.id = 'pt-global-styles';
   style.textContent = `
@@ -208,5 +215,17 @@ export function injectGlobalStyles(): void {
       }
     }
   `;
-  document.head.appendChild(style);
+  root.appendChild(style);
+
+  // Cursor rule must be in document.head to affect the host page
+  if (root !== document.head && !document.getElementById('pt-cursor-styles')) {
+    const cursorStyle = document.createElement('style');
+    cursorStyle.id = 'pt-cursor-styles';
+    cursorStyle.textContent = `
+      .pt-inspect-cursor, .pt-inspect-cursor * {
+        cursor: crosshair !important;
+      }
+    `;
+    document.head.appendChild(cursorStyle);
+  }
 }

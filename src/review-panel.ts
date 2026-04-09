@@ -1,7 +1,8 @@
 import { Annotation } from './types';
 import { tokens } from './styles';
+import { getUIRoot } from './context';
 import { pulseHighlight } from './highlight-overlay';
-import { isProxyMode } from './output';
+import { isProxyMode, isMcpMode } from './output';
 
 const PANEL_ID = 'pt-review-panel';
 
@@ -261,7 +262,7 @@ export function showReviewPanel(
           justify-content:center;
           gap:${tokens.space[2]};
         ">
-          ${isProxyMode() ? `
+          ${isProxyMode() || isMcpMode() ? `
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
               <line x1="22" y1="2" x2="11" y2="13"/>
               <polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -280,7 +281,7 @@ export function showReviewPanel(
   `;
 
   panel.innerHTML = header + cardsHtml + footer;
-  document.body.appendChild(panel);
+  getUIRoot().appendChild(panel);
 
   // --- Event Handlers ---
 
@@ -301,7 +302,7 @@ export function showReviewPanel(
     copyBtn.addEventListener('mousedown', () => { copyBtn.style.transform = 'scale(0.98)'; });
     copyBtn.addEventListener('mouseup', () => { copyBtn.style.transform = 'translateY(-1px)'; });
     copyBtn.addEventListener('click', async () => {
-      const proxy = isProxyMode();
+      const agentMode = isProxyMode() || isMcpMode();
 
       // Show loading state while awaiting the async operation
       copyBtn.disabled = true;
@@ -318,7 +319,7 @@ export function showReviewPanel(
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
             <polyline points="20 6 9 17 4 12"/>
           </svg>
-          ${proxy ? 'Sent!' : 'Copied!'}
+          ${agentMode ? 'Sent!' : 'Copied!'}
         `;
         copyBtn.style.background = tokens.color.success;
       } else {
