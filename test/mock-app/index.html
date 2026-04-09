@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TaskFlow — Mock App</title>
+
+  <!-- External CSS via <link> (most common pattern) -->
+  <link rel="stylesheet" href="/styles/main.css">
+
+  <!-- Second external CSS file -->
+  <link rel="stylesheet" href="/styles/theme.css">
+
+  <!-- CSS @import test -->
+  <style>
+    @import url('/styles/imported.css');
+  </style>
+
+  <!-- Inline styles (should always work, control case) -->
+  <style>
+    .inline-test {
+      border: 2px dashed #c084fc;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      font-size: 13px;
+      color: #7c3aed;
+      background: #faf5ff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="logo">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <rect width="20" height="20" rx="4" fill="#2563eb"/>
+        <path d="M6 10l3 3 5-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      TaskFlow
+    </div>
+    <nav>
+      <a href="#" class="active">Dashboard</a>
+      <a href="#">Projects</a>
+      <a href="#">Team</a>
+      <a href="#">Reports</a>
+      <a href="#">Settings</a>
+    </nav>
+    <div class="user-menu">
+      <button class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px;">Feedback</button>
+      <div class="avatar">NK</div>
+    </div>
+  </header>
+
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h4>Workspace</h4>
+        <ul>
+          <li><a href="#" class="active">Overview</a></li>
+          <li><a href="#">My Tasks</a></li>
+          <li><a href="#">Inbox</a></li>
+          <li><a href="#">Calendar</a></li>
+        </ul>
+      </div>
+      <div class="sidebar-section">
+        <h4>Projects</h4>
+        <ul>
+          <li><a href="#">Design System</a></li>
+          <li><a href="#">Mobile App</a></li>
+          <li><a href="#">API v2</a></li>
+          <li><a href="#">Landing Page</a></li>
+        </ul>
+      </div>
+      <div class="sidebar-section">
+        <h4>Teams</h4>
+        <ul>
+          <li><a href="#">Engineering</a></li>
+          <li><a href="#">Design</a></li>
+          <li><a href="#">Product</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Dashboard</h1>
+        <p>Overview of your projects and team activity.</p>
+      </div>
+
+      <!-- Inline style test (control — proves page loaded) -->
+      <div class="inline-test">
+        If you see this with a dashed purple border, inline styles work.
+        If the rest of the page looks unstyled, external CSS failed to load through the proxy.
+      </div>
+
+      <!-- Stat cards (from main.css) -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="label">Open Tasks</div>
+          <div class="value">42</div>
+          <div class="trend up">+12% this week</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Completed</div>
+          <div class="value">128</div>
+          <div class="trend up">+8% this week</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">In Review</div>
+          <div class="value">15</div>
+          <div class="trend down">-3% this week</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Blocked</div>
+          <div class="value">3</div>
+          <div class="trend down">+1 since yesterday</div>
+        </div>
+      </div>
+
+      <!-- Notifications (from theme.css) -->
+      <div style="margin-bottom: 24px;">
+        <div class="notification notification-info">
+          <div class="notification-icon">i</div>
+          <div>
+            <strong>Sprint 24 starts Monday.</strong>
+            <span style="color: #64748b;"> Planning meeting at 10am.</span>
+          </div>
+        </div>
+        <div class="notification notification-success">
+          <div class="notification-icon">&#10003;</div>
+          <div>
+            <strong>Deploy succeeded.</strong>
+            <span style="color: #64748b;"> v2.4.1 is live in production.</span>
+          </div>
+        </div>
+        <div class="notification notification-warning">
+          <div class="notification-icon">!</div>
+          <div>
+            <strong>API rate limit at 80%.</strong>
+            <span style="color: #64748b;"> Consider upgrading your plan.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tags (from imported.css — via @import) -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-header"><h3>Tags (loaded via @import)</h3></div>
+        <div class="card-body">
+          <div class="tag-list" style="margin-top: 8px;">
+            <span class="tag tag-primary">React</span>
+            <span class="tag tag-primary">TypeScript</span>
+            <span class="tag tag-success">Shipped</span>
+            <span class="tag tag-warning">Needs Review</span>
+            <span class="tag">Documentation</span>
+            <span class="tag">Performance</span>
+          </div>
+          <div class="progress-bar" style="margin-top: 16px;">
+            <div class="fill fill-blue" style="width: 65%;"></div>
+          </div>
+          <p style="font-size: 12px; color: #64748b; margin-top: 4px;">65% complete</p>
+        </div>
+      </div>
+
+      <!-- Cards grid -->
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-header">
+            <h3>Design System</h3>
+            <span class="badge badge-success">Active</span>
+          </div>
+          <div class="card-body">
+            <p>Component library with tokens, patterns, and guidelines for consistent interfaces.</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3>Mobile App</h3>
+            <span class="badge badge-warning">In Progress</span>
+          </div>
+          <div class="card-body">
+            <p>Cross-platform mobile app with React Native. Currently in beta testing phase.</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3>API v2</h3>
+            <span class="badge badge-info">Planning</span>
+          </div>
+          <div class="card-body">
+            <p>RESTful API redesign with GraphQL support and improved rate limiting.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dark section (from theme.css) -->
+      <div class="dark-section">
+        <h2>Quick Start</h2>
+        <p>Install the CLI and proxy your dev server to start annotating.</p>
+        <div class="code-block">
+          <span class="comment"># Install globally</span><br>
+          <span class="keyword">npm</span> install -g promptotype<br><br>
+          <span class="comment"># Run against your app</span><br>
+          <span class="keyword">promptotype</span> <span class="string">http://localhost:3000</span>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrapper">
+        <div class="table-header">
+          <h2>Recent Activity</h2>
+          <button class="btn btn-secondary">View All</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Assignee</th>
+              <th>Status</th>
+              <th>Priority</th>
+              <th>Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Fix navigation z-index on mobile</td>
+              <td>Nikos K.</td>
+              <td><span class="badge badge-success">Done</span></td>
+              <td><span class="badge badge-error">High</span></td>
+              <td>2 hours ago</td>
+            </tr>
+            <tr>
+              <td>Add dark mode toggle to settings</td>
+              <td>Alex M.</td>
+              <td><span class="badge badge-warning">In Review</span></td>
+              <td><span class="badge badge-warning">Medium</span></td>
+              <td>5 hours ago</td>
+            </tr>
+            <tr>
+              <td>Update onboarding flow copy</td>
+              <td>Sarah L.</td>
+              <td><span class="badge badge-info">In Progress</span></td>
+              <td><span class="badge badge-info">Low</span></td>
+              <td>Yesterday</td>
+            </tr>
+            <tr>
+              <td>Migrate auth to OAuth 2.0</td>
+              <td>Nikos K.</td>
+              <td><span class="badge badge-warning">In Review</span></td>
+              <td><span class="badge badge-error">High</span></td>
+              <td>2 days ago</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Form section -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-header"><h3>Quick Task</h3></div>
+        <div class="card-body" style="padding-top: 16px;">
+          <div class="form-group">
+            <label for="task-title">Task Title</label>
+            <input type="text" id="task-title" placeholder="What needs to be done?">
+          </div>
+          <div class="form-group">
+            <label for="task-desc">Description</label>
+            <textarea id="task-desc" rows="3" placeholder="Add details..."></textarea>
+          </div>
+          <div style="display: flex; gap: 16px;">
+            <div class="form-group" style="flex: 1;">
+              <label for="task-priority">Priority</label>
+              <select id="task-priority">
+                <option>Low</option>
+                <option selected>Medium</option>
+                <option>High</option>
+                <option>Critical</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label for="task-assignee">Assignee</label>
+              <select id="task-assignee">
+                <option>Nikos K.</option>
+                <option>Alex M.</option>
+                <option>Sarah L.</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Labels</label>
+            <div class="checkbox-group">
+              <label><input type="checkbox" checked> Bug</label>
+              <label><input type="checkbox"> Feature</label>
+              <label><input type="checkbox"> Enhancement</label>
+              <label><input type="checkbox" checked> Frontend</label>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 8px;">
+            <button class="btn btn-primary">Create Task</button>
+            <button class="btn btn-secondary">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div class="card">
+        <div class="empty-state">
+          <div class="icon">&#128203;</div>
+          <h3>No archived tasks</h3>
+          <p>Completed tasks will appear here after 30 days.</p>
+          <button class="btn btn-secondary" style="margin-top: 12px;">View Completed</button>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <footer class="app-footer">
+    TaskFlow v2.4.1 — Mock app for testing Promptotype proxy
+  </footer>
+
+  <!-- JS-injected CSS test (mimics bundler behavior) -->
+  <script>
+    const style = document.createElement('style');
+    style.textContent = `
+      .js-injected {
+        background: linear-gradient(135deg, #fdf2f8, #faf5ff);
+        border: 1px solid #f0abfc;
+        padding: 12px;
+        border-radius: 8px;
+        margin: 24px;
+        font-size: 13px;
+        color: #a855f7;
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Add a JS-injected element
+    const el = document.createElement('div');
+    el.className = 'js-injected';
+    el.textContent = 'This element + its styles were injected by JavaScript.';
+    document.querySelector('.main-content')?.appendChild(el);
+  </script>
+
+</body>
+</html>

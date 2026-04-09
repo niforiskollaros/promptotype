@@ -118,6 +118,26 @@ export function startProxyServer(options: ProxyServerOptions): {
           redirect: 'manual',
         });
 
+        // Rewrite absolute Location headers so redirects stay on the proxy
+        const location = proxyRes.headers.get('location');
+        if (location && proxyRes.status >= 300 && proxyRes.status < 400) {
+          try {
+            const locUrl = new URL(location, target.origin);
+            if (locUrl.origin === target.origin) {
+              const rewritten = `${locUrl.pathname}${locUrl.search}${locUrl.hash}`;
+              const redirHeaders = new Headers(proxyRes.headers);
+              redirHeaders.set('location', rewritten);
+              return new Response(proxyRes.body, {
+                status: proxyRes.status,
+                statusText: proxyRes.statusText,
+                headers: redirHeaders,
+              });
+            }
+          } catch {
+            // Malformed URL — pass through as-is
+          }
+        }
+
         const contentType = proxyRes.headers.get('content-type') || '';
         const isHtml = contentType.includes('text/html');
 
@@ -156,11 +176,22 @@ export function startProxyServer(options: ProxyServerOptions): {
           });
         }
 
-        // Non-HTML: pass through as-is
+        // Non-HTML: pass through body, but strip hop-by-hop headers.
+        // Bun's fetch() de-chunks the body stream but keeps the original
+        // transfer-encoding/content-encoding headers — forwarding those causes
+        // the browser to try to decode an already-decoded body, breaking CSS/JS.
+        const passHeaders = new Headers();
+        for (const [key, value] of proxyRes.headers.entries()) {
+          const lower = key.toLowerCase();
+          if (lower === 'transfer-encoding' || lower === 'content-encoding' || lower === 'content-length') continue;
+          if (lower === 'connection' || lower === 'keep-alive') continue;
+          passHeaders.set(key, value);
+        }
+
         return new Response(proxyRes.body, {
           status: proxyRes.status,
           statusText: proxyRes.statusText,
-          headers: proxyRes.headers,
+          headers: passHeaders,
         });
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Unknown error';

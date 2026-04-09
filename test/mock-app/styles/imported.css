@@ -1,0 +1,42 @@
+/* Loaded via CSS @import — tests proxy handling of CSS-initiated requests */
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.tag-primary { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+.tag-success { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+.tag-warning { background: #fffbeb; color: #d97706; border-color: #fde68a; }
+
+/* Progress bar */
+.progress-bar {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.progress-bar .fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.progress-bar .fill-blue { background: #2563eb; }
+.progress-bar .fill-green { background: #16a34a; }
+.progress-bar .fill-amber { background: #d97706; }

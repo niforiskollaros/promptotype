@@ -13,6 +13,9 @@
     "build:cli": "vite build && bun build cli/index.ts --outfile dist/promptotype --compile",
     "build:cli:all": "vite build && bun build cli/index.ts --outfile dist/promptotype-darwin-arm64 --compile --target=bun-darwin-arm64 && bun build cli/index.ts --outfile dist/promptotype-darwin-x64 --compile --target=bun-darwin-x64 && bun build cli/index.ts --outfile dist/promptotype-linux-x64 --compile --target=bun-linux-x64 && bun build cli/index.ts --outfile dist/promptotype-linux-arm64 --compile --target=bun-linux-arm64",
     "cli": "bun run cli/index.ts",
+    "test:app": "bun test/mock-app/serve.ts",
+    "test:app:nextjs": "bun test/mock-app/serve.ts --mode nextjs",
+    "test:proxy": "bun run cli/index.ts http://localhost:3000",
     "postinstall": "node npm/postinstall.js"
   },
   "files": [
