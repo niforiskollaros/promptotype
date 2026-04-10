@@ -37,13 +37,27 @@ export function generateMarkdown(annotations: Annotation[]): string {
     md += `- Padding: ${s.spacing.padding}\n`;
     md += `- Alignment: ${s.alignment.textAlign}, ${s.alignment.display}, align-items: ${s.alignment.alignItems}\n`;
     md += `\n`;
+    // Explicit design changes
+    const c = a.changes;
+    const hasChanges = c && (c.text || c.textColor || c.bgColor || c.fontSize || c.fontWeight || c.lineHeight || c.margin || c.padding || c.removeClasses?.length || c.addClasses?.length);
+    if (hasChanges) {
+      md += `**Changes:**\n`;
+      if (c.text !== undefined) md += `- Text: "${a.textContent}" → "${c.text}"\n`;
+      if (c.textColor) md += `- Text color: ${a.styles.color.text} → ${c.textColor}\n`;
+      if (c.bgColor) md += `- Background: ${a.styles.color.background} → ${c.bgColor}\n`;
+      if (c.fontSize) md += `- Font size: ${a.styles.font.size} → ${c.fontSize}\n`;
+      if (c.fontWeight) md += `- Font weight: ${a.styles.font.weight} → ${c.fontWeight}\n`;
+      if (c.lineHeight) md += `- Line height: ${a.styles.font.lineHeight} → ${c.lineHeight}\n`;
+      if (c.margin) md += `- Margin: ${a.styles.spacing.margin} → ${c.margin}\n`;
+      if (c.padding) md += `- Padding: ${a.styles.spacing.padding} → ${c.padding}\n`;
+      if (c.removeClasses?.length) md += `- Remove classes: \`${c.removeClasses.join(' ')}\`\n`;
+      if (c.addClasses?.length) md += `- Add classes: \`${c.addClasses.join(' ')}\`\n`;
+      md += `\n`;
+    }
     if (a.prompt) {
       md += `**Prompt:** ${a.prompt}\n`;
     }
-    if (a.colorSuggestion) {
-      md += `\n**Suggested color:** ${a.colorSuggestion}\n`;
-    }
-    if (!a.prompt && !a.colorSuggestion) {
+    if (!a.prompt && !hasChanges) {
       md += `**Prompt:** Review this element\n`;
     }
     md += `\n---\n\n`;

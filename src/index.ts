@@ -73,10 +73,21 @@ function isElementAnnotated(el: HTMLElement): boolean {
 }
 
 // --- Mode Transitions ---
+function hideToggleButton(): void {
+  const btn = getUIRoot().querySelector('#pt-toggle-button') as HTMLElement | null;
+  if (btn) btn.style.display = 'none';
+}
+
+function showToggleButton(): void {
+  const btn = getUIRoot().querySelector('#pt-toggle-button') as HTMLElement | null;
+  if (btn) btn.style.display = 'flex';
+}
+
 function activate(): void {
   if (mode !== 'inactive') return;
   mode = 'inspect';
   injectGlobalStyles();
+  hideToggleButton();
   document.documentElement.classList.add('pt-inspect-cursor');
   updateStatusBar(annotations.length, openReview, deactivate);
   updateAllPins(annotations);
@@ -101,6 +112,7 @@ function deactivate(): void {
   // Signal MCP server that the session ended (resolves pending waits)
   if (isMcpMode()) signalMcpClose();
 
+  showToggleButton();
   document.documentElement.classList.remove('pt-inspect-cursor');
   document.removeEventListener('mousemove', handleMouseMove, true);
   document.removeEventListener('click', handleClick, true);
@@ -124,17 +136,20 @@ function enterAnnotateMode(el: HTMLElement): void {
 
   const styles = extractStyles(el);
   const source = extractSourceLocation(el);
+  const classes = extractCssClasses(el);
+  const text = extractTextContent(el);
   const existing = findAnnotation(el);
 
   showPopover(
     el,
     styles,
     existing,
-    (prompt, colorSuggestion) => {
+    (prompt, colorSuggestion, changes) => {
       // Save annotation
       if (existing) {
         existing.prompt = prompt;
         existing.colorSuggestion = colorSuggestion;
+        existing.changes = changes;
       } else {
         const annotation = {
           id: 'ann-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
@@ -142,9 +157,10 @@ function enterAnnotateMode(el: HTMLElement): void {
           selector: generateSelector(el),
           styles,
           source,
-          cssClasses: extractCssClasses(el),
-          textContent: extractTextContent(el),
+          cssClasses: classes,
+          textContent: text,
           screenshotDataUrl: null as string | null,
+          changes,
           prompt,
           colorSuggestion,
           timestamp: Date.now(),
@@ -164,6 +180,8 @@ function enterAnnotateMode(el: HTMLElement): void {
       returnToInspect();
     },
     source,
+    classes,
+    text,
   );
 }
 

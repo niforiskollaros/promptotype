@@ -11,7 +11,7 @@ function ensureBar(): HTMLDivElement {
   bar.id = BAR_ID;
   bar.style.cssText = `
     position: fixed;
-    top: 0;
+    bottom: 40px;
     left: 0;
     right: 0;
     z-index: ${tokens.z.breadcrumb};
@@ -24,7 +24,7 @@ function ensureBar(): HTMLDivElement {
     white-space: nowrap;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid ${tokens.color.surface.borderSubtle};
+    border-top: 1px solid ${tokens.color.surface.borderSubtle};
   `;
   getUIRoot().appendChild(bar);
   return bar;

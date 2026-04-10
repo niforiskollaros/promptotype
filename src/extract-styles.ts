@@ -1,34 +1,45 @@
 import { ExtractedStyles, SourceLocation } from './types';
 
+// Reusable 1x1 canvas for color conversion
+let _colorCanvas: HTMLCanvasElement | null = null;
+let _colorCtx: CanvasRenderingContext2D | null = null;
+
+function getColorCtx(): CanvasRenderingContext2D | null {
+  if (!_colorCtx) {
+    _colorCanvas = document.createElement('canvas');
+    _colorCanvas.width = 1;
+    _colorCanvas.height = 1;
+    _colorCtx = _colorCanvas.getContext('2d', { willReadFrequently: true });
+  }
+  return _colorCtx;
+}
+
 function rgbToHex(color: string): string {
   // Handle rgb/rgba directly
   const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
   if (match) {
-    const r = parseInt(match[1]);
-    const g = parseInt(match[2]);
-    const b = parseInt(match[3]);
-    return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+    return '#' + [match[1], match[2], match[3]]
+      .map(v => parseInt(v).toString(16).padStart(2, '0'))
+      .join('').toUpperCase();
   }
 
+  // Already hex
+  if (/^#[0-9a-fA-F]{6}$/.test(color)) return color.toUpperCase();
+
   // For modern color formats (lab, oklch, oklab, lch, etc.),
-  // use canvas to force conversion to hex
+  // paint a pixel and read back as RGB
   try {
-    const ctx = document.createElement('canvas').getContext('2d');
+    const ctx = getColorCtx();
     if (ctx) {
+      ctx.clearRect(0, 0, 1, 1);
       ctx.fillStyle = color;
-      const result = ctx.fillStyle; // Canvas normalizes to #rrggbb or rgb()
-      if (result.startsWith('#')) return result.toUpperCase();
-      // Canvas might return rgb() — recurse once
-      const rgbMatch = result.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-      if (rgbMatch) {
-        return '#' + [rgbMatch[1], rgbMatch[2], rgbMatch[3]]
-          .map(v => parseInt(v).toString(16).padStart(2, '0'))
-          .join('').toUpperCase();
-      }
+      ctx.fillRect(0, 0, 1, 1);
+      const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+      return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
     }
   } catch {}
 
-  return color; // Return as-is if conversion fails
+  return color;
 }
 
 export function extractStyles(el: HTMLElement): ExtractedStyles {
