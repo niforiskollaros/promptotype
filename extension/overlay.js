@@ -1706,6 +1706,12 @@
 		updateAllPins(annotations);
 		updateStatusBar(annotations.length, openReview, deactivate);
 	}
+	function clearAfterSubmit() {
+		annotations = [];
+		clearAllPins();
+		hideReviewPanel();
+		returnToInspect();
+	}
 	function openReview() {
 		mode = "review";
 		hideHighlight();
@@ -1730,6 +1736,7 @@
 			const md = generateMarkdown(annotations);
 			if (isProxyMode()) if (await submitToProxy(md)) {
 				showToast(`Sent ${annotations.length} annotation${annotations.length !== 1 ? "s" : ""} to AI agent — you can close this tab`);
+				clearAfterSubmit();
 				return true;
 			} else {
 				const copied = await copyToClipboard(md);
@@ -1739,6 +1746,7 @@
 			}
 			else if (isMcpMode()) if (await submitToMcp(md)) {
 				showToast(`Sent ${annotations.length} annotation${annotations.length !== 1 ? "s" : ""} to AI agent via MCP`);
+				clearAfterSubmit();
 				return true;
 			} else {
 				const copied = await copyToClipboard(md);

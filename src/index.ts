@@ -159,6 +159,13 @@ function returnToInspect(): void {
   updateStatusBar(annotations.length, openReview, deactivate);
 }
 
+function clearAfterSubmit(): void {
+  annotations = [];
+  clearAllPins();
+  hideReviewPanel();
+  returnToInspect();
+}
+
 function openReview(): void {
   mode = 'review';
   hideHighlight();
@@ -195,6 +202,7 @@ function openReview(): void {
         const sent = await submitToProxy(md);
         if (sent) {
           showToast(`Sent ${annotations.length} annotation${annotations.length !== 1 ? 's' : ''} to AI agent — you can close this tab`);
+          clearAfterSubmit();
           return true;
         } else {
           // Fallback to clipboard if proxy POST fails
@@ -208,6 +216,7 @@ function openReview(): void {
         const sent = await submitToMcp(md);
         if (sent) {
           showToast(`Sent ${annotations.length} annotation${annotations.length !== 1 ? 's' : ''} to AI agent via MCP`);
+          clearAfterSubmit();
           return true;
         } else {
           // Fallback to clipboard if MCP server unreachable
