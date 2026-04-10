@@ -86,6 +86,71 @@
 			}
 		};
 	}
+	/**
+	* Extract source location from a DOM element.
+	* Tries multiple strategies in order:
+	* 1. data-pt-* attributes (companion Vite plugin)
+	* 2. data-inspector-* attributes (react-dev-inspector)
+	* 3. React Fiber _debugSource (React < 19, dev mode)
+	*/
+	function extractSourceLocation(el) {
+		const ptFile = el.getAttribute("data-pt-file") || el.getAttribute("data-dev-file");
+		const ptLine = el.getAttribute("data-pt-line") || el.getAttribute("data-dev-line");
+		if (ptFile && ptLine) return {
+			fileName: el.getAttribute("data-pt-path") || el.getAttribute("data-dev-path") || ptFile,
+			lineNumber: parseInt(ptLine, 10),
+			componentName: el.getAttribute("data-pt-component") || el.getAttribute("data-dev-component") || void 0
+		};
+		const inspectorPath = el.getAttribute("data-inspector-relative-path");
+		const inspectorLine = el.getAttribute("data-inspector-line");
+		if (inspectorPath && inspectorLine) return {
+			fileName: inspectorPath,
+			lineNumber: parseInt(inspectorLine, 10),
+			columnNumber: parseInt(el.getAttribute("data-inspector-column") || "0", 10) || void 0
+		};
+		let current = el;
+		while (current) {
+			const source = getReactFiberSource(current);
+			if (source) return source;
+			current = current.parentElement;
+		}
+		return null;
+	}
+	/**
+	* Read React Fiber _debugSource from a DOM element.
+	* React attaches fibers with randomized keys like __reactFiber$abc123.
+	*/
+	function getReactFiberSource(el) {
+		try {
+			const fiberKey = Object.keys(el).find((k) => k.startsWith("__reactFiber$") || k.startsWith("__reactInternalInstance$"));
+			if (!fiberKey) return null;
+			let fiber = el[fiberKey];
+			let maxDepth = 15;
+			while (fiber && maxDepth-- > 0) {
+				if (fiber._debugSource) {
+					const src = fiber._debugSource;
+					return {
+						fileName: src.fileName || src.file || "",
+						lineNumber: src.lineNumber || src.line || 0,
+						columnNumber: src.columnNumber || src.col || void 0,
+						componentName: getComponentName(fiber)
+					};
+				}
+				fiber = fiber._debugOwner || fiber.return;
+			}
+		} catch {}
+		return null;
+	}
+	/** Extract component name from a React Fiber node. */
+	function getComponentName(fiber) {
+		try {
+			if (!fiber?.type) return void 0;
+			if (typeof fiber.type === "string") return fiber.type;
+			return fiber.type.displayName || fiber.type.name || void 0;
+		} catch {
+			return;
+		}
+	}
 	function generateSelector(el) {
 		const tag = el.tagName.toLowerCase();
 		const id = el.id ? `#${el.id}` : "";
@@ -610,7 +675,7 @@
     ">${v}</span>`;
 		}).join(" ");
 	}
-	function showPopover(el, styles, existing, onSave, onCancel) {
+	function showPopover(el, styles, existing, onSave, onCancel, source) {
 		hidePopover();
 		const rect = el.getBoundingClientRect();
 		popover = document.createElement("div");
@@ -689,12 +754,20 @@
       justify-content:space-between;
       align-items:center;
     ">
-      <span style="
-        font-weight:${tokens.font.weight.semibold};
-        color:${tokens.color.primary[400]};
-        font-size:${tokens.font.size.sm};
-        font-family:${tokens.font.mono};
-      ">${selector}</span>
+      <div>
+        <span style="
+          font-weight:${tokens.font.weight.semibold};
+          color:${tokens.color.primary[400]};
+          font-size:${tokens.font.size.sm};
+          font-family:${tokens.font.mono};
+        ">${selector}</span>
+        ${source ? `<div style="
+          font-size:${tokens.font.size.xs};
+          font-family:${tokens.font.mono};
+          color:${tokens.color.text.tertiary};
+          margin-top:2px;
+        ">${source.fileName}:${source.lineNumber}${source.componentName ? ` · ${source.componentName}` : ""}</div>` : ""}
+      </div>
       <button id="pt-popover-close" style="
         background:${tokens.color.surface.elevated};
         border:none;
@@ -1130,6 +1203,11 @@
 		annotations.forEach((a, i) => {
 			const s = a.styles;
 			md += `### ${i + 1}. \`${a.selector}\`\n`;
+			if (a.source) {
+				const loc = `${a.source.fileName}:${a.source.lineNumber}`;
+				const comp = a.source.componentName ? ` (${a.source.componentName})` : "";
+				md += `**Source:** \`${loc}\`${comp}\n`;
+			}
 			md += `**Current styles:**\n`;
 			md += `- Font: ${s.font.family}, ${s.font.size}, weight ${s.font.weight}, line-height ${s.font.lineHeight}\n`;
 			md += `- Color: ${s.color.text} (on background ${s.color.background})\n`;
@@ -1679,6 +1757,7 @@
 		hideHighlight();
 		document.documentElement.classList.remove("pt-inspect-cursor");
 		const styles = extractStyles(el);
+		const source = extractSourceLocation(el);
 		const existing = findAnnotation(el);
 		showPopover(el, styles, existing, (prompt, colorSuggestion) => {
 			if (existing) {
@@ -1689,6 +1768,7 @@
 				element: el,
 				selector: generateSelector(el),
 				styles,
+				source,
 				prompt,
 				colorSuggestion,
 				timestamp: Date.now()
@@ -1698,7 +1778,7 @@
 		}, () => {
 			hidePopover();
 			returnToInspect();
-		});
+		}, source);
 	}
 	function returnToInspect() {
 		mode = "inspect";

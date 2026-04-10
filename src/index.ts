@@ -1,6 +1,6 @@
 import { Annotation, Mode } from './types';
 import { initContext, getUIRoot, getShadowHost } from './context';
-import { extractStyles, generateSelector } from './extract-styles';
+import { extractStyles, generateSelector, extractSourceLocation } from './extract-styles';
 import { showHighlight, hideHighlight, destroyHighlight } from './highlight-overlay';
 import { updateBreadcrumb, hideBreadcrumb, destroyBreadcrumb } from './breadcrumb-bar';
 import { showPopover, hidePopover, isPopoverOpen } from './annotation-popover';
@@ -120,6 +120,7 @@ function enterAnnotateMode(el: HTMLElement): void {
   document.documentElement.classList.remove('pt-inspect-cursor');
 
   const styles = extractStyles(el);
+  const source = extractSourceLocation(el);
   const existing = findAnnotation(el);
 
   showPopover(
@@ -137,6 +138,7 @@ function enterAnnotateMode(el: HTMLElement): void {
           element: el,
           selector: generateSelector(el),
           styles,
+          source,
           prompt,
           colorSuggestion,
           timestamp: Date.now(),
@@ -149,6 +151,7 @@ function enterAnnotateMode(el: HTMLElement): void {
       hidePopover();
       returnToInspect();
     },
+    source,
   );
 }
 

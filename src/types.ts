@@ -21,11 +21,19 @@ export interface ExtractedStyles {
   };
 }
 
+export interface SourceLocation {
+  fileName: string;
+  lineNumber: number;
+  columnNumber?: number;
+  componentName?: string;
+}
+
 export interface Annotation {
   id: string;
   element: HTMLElement;
   selector: string;
   styles: ExtractedStyles;
+  source: SourceLocation | null;
   prompt: string;
   colorSuggestion: string;
   timestamp: number;

@@ -1,4 +1,4 @@
-import { ExtractedStyles, Annotation } from './types';
+import { ExtractedStyles, Annotation, SourceLocation } from './types';
 import { tokens } from './styles';
 import { getUIRoot } from './context';
 
@@ -76,6 +76,7 @@ export function showPopover(
   existing: Annotation | null,
   onSave: (prompt: string, colorSuggestion: string) => void,
   onCancel: () => void,
+  source?: SourceLocation | null,
 ): void {
   hidePopover();
 
@@ -164,12 +165,20 @@ export function showPopover(
       justify-content:space-between;
       align-items:center;
     ">
-      <span style="
-        font-weight:${tokens.font.weight.semibold};
-        color:${tokens.color.primary[400]};
-        font-size:${tokens.font.size.sm};
-        font-family:${tokens.font.mono};
-      ">${selector}</span>
+      <div>
+        <span style="
+          font-weight:${tokens.font.weight.semibold};
+          color:${tokens.color.primary[400]};
+          font-size:${tokens.font.size.sm};
+          font-family:${tokens.font.mono};
+        ">${selector}</span>
+        ${source ? `<div style="
+          font-size:${tokens.font.size.xs};
+          font-family:${tokens.font.mono};
+          color:${tokens.color.text.tertiary};
+          margin-top:2px;
+        ">${source.fileName}:${source.lineNumber}${source.componentName ? ` · ${source.componentName}` : ''}</div>` : ''}
+      </div>
       <button id="pt-popover-close" style="
         background:${tokens.color.surface.elevated};
         border:none;

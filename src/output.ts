@@ -7,6 +7,11 @@ export function generateMarkdown(annotations: Annotation[]): string {
   annotations.forEach((a, i) => {
     const s = a.styles;
     md += `### ${i + 1}. \`${a.selector}\`\n`;
+    if (a.source) {
+      const loc = `${a.source.fileName}:${a.source.lineNumber}`;
+      const comp = a.source.componentName ? ` (${a.source.componentName})` : '';
+      md += `**Source:** \`${loc}\`${comp}\n`;
+    }
     md += `**Current styles:**\n`;
     md += `- Font: ${s.font.family}, ${s.font.size}, weight ${s.font.weight}, line-height ${s.font.lineHeight}\n`;
     md += `- Color: ${s.color.text} (on background ${s.color.background})\n`;
