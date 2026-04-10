@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A browser overlay tool that lets anyone select UI elements in a locally running app, see their computed design properties, write prompts, batch multiple annotations, review them, and send structured feedback to AI coding agents.
+A browser overlay tool that lets anyone select UI elements in a locally running app, see their computed design properties, directly edit text/colors/spacing/classes, batch multiple annotations with live preview, review changes as before→after diffs, and send structured feedback to AI coding agents in a continuous loop.
 
 **Inspirations:** React Grab (element selection), plannotator (annotation UI + CLI integration)
 **Repo:** https://github.com/niforiskollaros/promptotype
@@ -11,7 +11,7 @@ A browser overlay tool that lets anyone select UI elements in a locally running 
 
 ## Architecture
 
-**Vanilla TypeScript** — single IIFE bundle (~69KB, ~14KB gzip), zero framework dependencies. Works in any browser, on any app.
+**Vanilla TypeScript** — single IIFE bundle (~89KB, ~20KB gzip), zero framework dependencies. Works in any browser, on any app.
 
 Built with **Vite** (IIFE library mode). No React, no framework. Two distribution modes:
 1. **Chrome Extension** (primary) — injects overlay via Shadow DOM, sends annotations to MCP server
@@ -23,14 +23,15 @@ src/
 ├── context.ts               # Shadow DOM context — threads UI root through all modules
 ├── types.ts                 # TypeScript interfaces (Annotation, ExtractedStyles, Mode)
 ├── styles.ts                # Design token system (colors, spacing, typography, shadows, transitions)
-├── extract-styles.ts        # getComputedStyle extraction + CSS selector generation + Color Level 4
+├── extract-styles.ts        # getComputedStyle extraction + CSS selector + Color Level 4 + React Fiber source
+├── tailwind.ts              # Tailwind CSS detection + class categorization
 ├── highlight-overlay.ts     # Element highlight with box model visualization (margin/padding)
-├── breadcrumb-bar.ts        # DOM path breadcrumb bar (top of viewport)
-├── annotation-popover.ts    # Properties display + prompt textarea + color suggestion
+├── breadcrumb-bar.ts        # DOM path breadcrumb bar (above status bar)
+├── annotation-popover.ts    # Editable popover: text, colors, font, spacing, class chips, live preview
 ├── pin-markers.ts           # Numbered pin markers on annotated elements
 ├── status-bar.ts            # Bottom bar with annotation count + Review & Submit button
-├── review-panel.ts          # Right side panel listing all annotations + copy to clipboard
-└── output.ts                # Markdown generation + clipboard API + proxy/MCP submission
+├── review-panel.ts          # Right side panel with change diffs + copy to clipboard
+└── output.ts                # Markdown generation + Tailwind output + clipboard/proxy/MCP submission
 
 cli/
 ├── index.ts                 # CLI entry — arg parsing, auto-detect, `serve` subcommand
@@ -40,14 +41,15 @@ cli/
 
 extension/
 ├── manifest.json            # Chrome Manifest V3
-├── background.js            # Service worker — injection, MCP health, message routing
-├── popup.html               # Extension popup UI
+├── background.js            # Service worker — injection, MCP health, screenshot capture
+├── content-bridge.js        # Content script (ISOLATED) — relays screenshot requests
+├── popup.html               # Extension popup — MCP status, overlay status, page URL
 ├── popup.js                 # Popup logic — health check, inject/remove toggle
 ├── overlay.js               # Built overlay IIFE (copied from dist/ during build)
 └── icons/                   # Extension icons (16, 48, 128px)
 
 npm/
-├── postinstall.js           # Downloads platform binary from GitHub release
+├── postinstall.js           # Downloads binary + installs slash command + registers MCP + auto-allows tools
 └── cli.js                   # Thin Node.js wrapper that execs the binary
 
 site/
@@ -99,13 +101,27 @@ For npm, bump version in package.json and run `npm publish`.
 
 ## User Flow
 
+### Extension + MCP (primary — continuous mode)
+```
+/promptotype in Claude Code
+  → Agent calls wait_for_annotations() — blocks, listening
+  → User clicks extension icon → "Activate on Page"
+  → INSPECT: hover highlights elements, Alt+Scroll for depth
+  → Click element → ANNOTATE: editable popover with live preview
+    → Edit text, pick colors, change font/spacing, toggle Tailwind classes
+    → Save → pin marker appears, continue selecting more
+  → "Review & Submit" → REVIEW: side panel with before→after diffs
+  → Submit to Agent → annotations flow to agent → agent applies changes
+  → Overlay clears, returns to INSPECT for next round
+  → Agent calls wait_for_annotations() again — loop continues
+  → Deactivate overlay (Cmd+Shift+D) → close signal → agent stops looping
+```
+
+### Standalone (clipboard fallback)
 ```
 Activate (Cmd+Shift+D or floating button)
-  → INSPECT: hover highlights elements with box model (margin/padding), Alt+Scroll for depth
-  → Click element → ANNOTATE: popover shows properties + optional prompt textarea
-  → Save → pin marker appears, continue selecting more
-  → "Review & Submit" → REVIEW: side panel with all annotations
-  → Submit to Agent (proxy mode) or Copy to Clipboard (standalone)
+  → Same annotation flow
+  → Copy to Clipboard → paste into any AI agent
 ```
 
 ## Key Design Decisions
@@ -139,34 +155,49 @@ All UI references `src/styles.ts` — never hardcode values in components.
 - **Transitions:** fast (100ms), normal (150ms), slow (200ms), spring (300ms)
 - **Z-index scale:** highlight → pins → breadcrumb → statusBar → popover → reviewPanel → toast
 
-## Extracted Properties (POC)
+## Annotation Data
 
-- Font: family, size, weight, line-height
-- Color: text, background (as hex, with clickable color chips)
-- Spacing: padding, margin (with box model visualization on highlight)
-- Alignment: text-align, display, align-items
+Each annotation captures:
+- **Source location**: file:line from React Fiber `_debugSource` or `data-inspector-*` attributes
+- **Text content**: direct text from the element (first 100 chars)
+- **CSS classes**: full class list, with Tailwind categorization when detected
+- **Computed styles**: font, color, spacing, alignment (as hex via canvas getImageData)
+- **Direct edits**: text, colors (native picker), font size/weight/line-height, margin, padding, class add/remove
+- **Live preview**: edits apply to the actual element temporarily, revert on cancel
+- **Screenshot**: captured via `chrome.tabs.captureVisibleTab` + canvas crop (extension only)
+- **Prompt**: optional freeform instructions for complex changes
+
+Markdown output includes explicit before→after diffs for all edits.
 
 ## Commands
 
 ```bash
-npm run dev          # Start dev server with sample app (index.html) on port 3333
-npm run build        # Build dist/promptotype.iife.js
-npm run build:cli    # Build CLI binary for current platform
+npm run dev            # Start dev server with sample app (index.html) on port 3333
+npm run build          # Build dist/promptotype.iife.js
+npm run build:ext      # Build overlay + copy to extension/overlay.js
+npm run build:cli      # Build CLI binary for current platform
 npm run build:cli:all  # Build for all 4 platforms (darwin/linux × arm64/x64)
-npm run preview      # Preview production build
+npm run test:app       # Start mock app (static mode) on port 3000
+npm run test:app:nextjs # Start mock app (Next.js mode with basePath)
+npm run test:proxy     # Run proxy against localhost:3000
+npm run preview        # Preview production build
 ```
 
 ## Future Roadmap
 
 | Feature | Status |
 |---------|--------|
-| Chrome extension + Shadow DOM injection | Done (v0.2.0, `feature/mcp_and_extention`) |
+| Chrome extension + Shadow DOM injection | Done (v0.2.0) |
 | MCP server (get_annotations, wait_for_annotations) | Done (v0.2.0) |
+| Continuous annotation mode (/promptotype loop) | Done (v0.2.0) |
+| Editable popover with live preview | Done (v0.2.0) |
+| React Fiber source location extraction | Done (v0.2.0) |
+| Tailwind class detection + categorization | Done (v0.2.0) |
+| Before→after change diffs in output | Done (v0.2.0) |
+| Screenshot capture per annotation | Done (v0.2.0, extension only) |
 | Chrome Web Store submission | Next |
-| MCP sampling (auto push-to-agent) | Planned — eliminates manual "check annotations" step |
 | Remote MCP server (Railway) | Planned — always-on, no local process |
-| Screenshot capture per annotation | Future |
-| Design token mapping (Tailwind detection) | Future |
+| Companion Vite plugin for source location (React 19+) | Planned |
 | Component detection (React/Vue) | Future |
 | Figma comparison mode | Future |
 | Firefox / Safari extensions | Future |
@@ -189,3 +220,12 @@ Session summaries are in `sessions/`:
 - SVG icons inline (no icon library dependency)
 - Animations use CSS keyframes defined in `injectGlobalStyles()`
 - Proxy routes use `/__pt__/` prefix, window globals use `__PT_*`
+- Shadow DOM context: all modules use `getUIRoot()` from `context.ts`, never `document.body`
+- Extension auto-init suppressed via `__PT_MCP__` flag; only `initWithShadowDOM` runs
+- MCP server port 4100 with auto-retry (4100-4109)
+- `/__pt__/api/wait` blocks until annotations arrive (slash command uses this)
+- `/__pt__/api/close` stops continuous mode (sent on overlay deactivate)
+- Color conversion via canvas `getImageData` — handles CSS Color Level 4 (lab, oklch, oklab)
+- Tailwind detected via `--tw-*` CSS variables on `:root`
+- React Fiber source via `__reactFiber$*` → `_debugSource` (React < 19)
+- Live preview stores originals in a Map, reverts on cancel/save/hidePopover
