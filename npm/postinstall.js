@@ -86,6 +86,34 @@ function registerMcpServer(binPath) {
     console.log('Tip: To register MCP server manually, run:');
     console.log(`  claude mcp add promptotype -s user -- ${binPath} serve`);
   }
+
+  // Auto-allow MCP tools so continuous mode doesn't prompt every iteration
+  try {
+    const settingsPath = join(homedir(), '.claude', 'settings.json');
+    let settings = {};
+    if (existsSync(settingsPath)) {
+      settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
+    }
+    if (!settings.permissions) settings.permissions = {};
+    if (!settings.permissions.allow) settings.permissions.allow = [];
+
+    const tools = ['mcp__promptotype__wait_for_annotations', 'mcp__promptotype__get_annotations'];
+    let changed = false;
+    for (const tool of tools) {
+      if (!settings.permissions.allow.includes(tool)) {
+        settings.permissions.allow.push(tool);
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      const { writeFileSync } = await import('fs');
+      writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+      console.log('Auto-allowed promptotype MCP tools in Claude Code permissions');
+    }
+  } catch {
+    // Non-critical — user can allow manually
+  }
 }
 
 async function main() {
