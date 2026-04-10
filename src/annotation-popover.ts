@@ -53,6 +53,33 @@ function sectionLabel(text: string): string {
   ">${text}</div>`;
 }
 
+// --- Live preview ---
+let previewOriginals: Map<string, string> | null = null;
+let previewElement: HTMLElement | null = null;
+
+function applyPreview(el: HTMLElement, prop: string, value: string): void {
+  if (!previewOriginals) previewOriginals = new Map();
+  if (!previewOriginals.has(prop)) {
+    previewOriginals.set(prop, (el.style as any)[prop] || '');
+  }
+  (el.style as any)[prop] = value;
+  previewElement = el;
+}
+
+function revertPreview(): void {
+  if (previewOriginals && previewElement) {
+    for (const [prop, original] of previewOriginals) {
+      if (prop === '__textContent') {
+        previewElement.textContent = original;
+      } else {
+        (previewElement.style as any)[prop] = original;
+      }
+    }
+  }
+  previewOriginals = null;
+  previewElement = null;
+}
+
 export function showPopover(
   el: HTMLElement,
   styles: ExtractedStyles,
@@ -365,12 +392,49 @@ export function showPopover(
 
   setTimeout(() => (textInput || textarea).focus(), 50);
 
-  // Color picker updates
+  // Color picker updates + live preview
   textColorInput?.addEventListener('input', () => {
     textColorHex.textContent = textColorInput.value.toUpperCase();
+    applyPreview(el, 'color', textColorInput.value);
   });
   bgColorInput?.addEventListener('input', () => {
     bgColorHex.textContent = bgColorInput.value.toUpperCase();
+    applyPreview(el, 'backgroundColor', bgColorInput.value);
+  });
+
+  // Text input live preview
+  const originalTextContent = el.textContent || '';
+  textInput?.addEventListener('input', () => {
+    // Only preview if element has direct text (not complex children)
+    if (el.childNodes.length <= 1 || (el.childNodes.length === 1 && el.childNodes[0].nodeType === Node.TEXT_NODE)) {
+      if (!previewOriginals) previewOriginals = new Map();
+      if (!previewOriginals.has('__textContent')) {
+        previewOriginals.set('__textContent', originalTextContent);
+        previewElement = el;
+      }
+      el.textContent = textInput.value;
+    }
+  });
+
+  // Style input live preview
+  const stylePreviewMap: Record<string, string> = {
+    'pt-edit-font-size': 'fontSize',
+    'pt-edit-font-weight': 'fontWeight',
+    'pt-edit-line-height': 'lineHeight',
+  };
+  for (const [inputId, cssProp] of Object.entries(stylePreviewMap)) {
+    const input = popover.querySelector<HTMLInputElement>(`#${inputId}`);
+    input?.addEventListener('input', () => {
+      if (input.value.trim()) applyPreview(el, cssProp, input.value.trim());
+    });
+  }
+  const marginInput = popover.querySelector<HTMLInputElement>('#pt-edit-margin');
+  marginInput?.addEventListener('input', () => {
+    if (marginInput.value.trim()) applyPreview(el, 'margin', marginInput.value.trim());
+  });
+  const paddingInput = popover.querySelector<HTMLInputElement>('#pt-edit-padding');
+  paddingInput?.addEventListener('input', () => {
+    if (paddingInput.value.trim()) applyPreview(el, 'padding', paddingInput.value.trim());
   });
 
   // Class chip toggle (click to mark for removal)
@@ -472,11 +536,11 @@ export function showPopover(
   // Close / Cancel
   closeBtn.addEventListener('mouseenter', () => { closeBtn.style.background = tokens.color.surface.overlay; closeBtn.style.color = tokens.color.text.primary; });
   closeBtn.addEventListener('mouseleave', () => { closeBtn.style.background = tokens.color.surface.elevated; closeBtn.style.color = tokens.color.text.tertiary; });
-  closeBtn.addEventListener('click', onCancel);
+  closeBtn.addEventListener('click', () => { revertPreview(); onCancel(); });
 
   cancelBtn.addEventListener('mouseenter', () => { cancelBtn.style.background = tokens.color.surface.elevated; cancelBtn.style.borderColor = tokens.color.text.tertiary; });
   cancelBtn.addEventListener('mouseleave', () => { cancelBtn.style.background = 'transparent'; cancelBtn.style.borderColor = tokens.color.surface.border; });
-  cancelBtn.addEventListener('click', onCancel);
+  cancelBtn.addEventListener('click', () => { revertPreview(); onCancel(); });
 
   // Save
   saveBtn.addEventListener('mouseenter', () => { saveBtn.style.background = tokens.color.primary[700]; saveBtn.style.transform = 'translateY(-1px)'; });
@@ -486,7 +550,8 @@ export function showPopover(
   saveBtn.addEventListener('click', () => {
     const prompt = textarea.value.trim();
     const changes = collectChanges();
-    // Use colorSuggestion for backwards compat (bgColor or textColor)
+    // Revert preview — the agent will make the real change in code
+    revertPreview();
     const colorSuggestion = changes.bgColor || changes.textColor || existing?.colorSuggestion || '';
     onSave(prompt, colorSuggestion, changes);
   });
@@ -494,11 +559,12 @@ export function showPopover(
   // Cmd+Enter to save
   popover.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); saveBtn.click(); }
-    if (e.key === 'Escape') { e.preventDefault(); onCancel(); }
+    if (e.key === 'Escape') { e.preventDefault(); revertPreview(); onCancel(); }
   });
 }
 
 export function hidePopover(): void {
+  revertPreview();
   popover?.remove();
   popover = null;
 }

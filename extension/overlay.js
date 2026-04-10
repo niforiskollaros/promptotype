@@ -797,6 +797,20 @@
     margin-bottom:${tokens.space[1]};
   ">${text}</div>`;
 	}
+	var previewOriginals = null;
+	var previewElement = null;
+	function applyPreview(el, prop, value) {
+		if (!previewOriginals) previewOriginals = /* @__PURE__ */ new Map();
+		if (!previewOriginals.has(prop)) previewOriginals.set(prop, el.style[prop] || "");
+		el.style[prop] = value;
+		previewElement = el;
+	}
+	function revertPreview() {
+		if (previewOriginals && previewElement) for (const [prop, original] of previewOriginals) if (prop === "__textContent") previewElement.textContent = original;
+		else previewElement.style[prop] = original;
+		previewOriginals = null;
+		previewElement = null;
+	}
 	function showPopover(el, styles, existing, onSave, onCancel, source, cssClasses, textContent) {
 		hidePopover();
 		const rect = el.getBoundingClientRect();
@@ -1071,9 +1085,40 @@
 		setTimeout(() => (textInput || textarea).focus(), 50);
 		textColorInput?.addEventListener("input", () => {
 			textColorHex.textContent = textColorInput.value.toUpperCase();
+			applyPreview(el, "color", textColorInput.value);
 		});
 		bgColorInput?.addEventListener("input", () => {
 			bgColorHex.textContent = bgColorInput.value.toUpperCase();
+			applyPreview(el, "backgroundColor", bgColorInput.value);
+		});
+		const originalTextContent = el.textContent || "";
+		textInput?.addEventListener("input", () => {
+			if (el.childNodes.length <= 1 || el.childNodes.length === 1 && el.childNodes[0].nodeType === Node.TEXT_NODE) {
+				if (!previewOriginals) previewOriginals = /* @__PURE__ */ new Map();
+				if (!previewOriginals.has("__textContent")) {
+					previewOriginals.set("__textContent", originalTextContent);
+					previewElement = el;
+				}
+				el.textContent = textInput.value;
+			}
+		});
+		for (const [inputId, cssProp] of Object.entries({
+			"pt-edit-font-size": "fontSize",
+			"pt-edit-font-weight": "fontWeight",
+			"pt-edit-line-height": "lineHeight"
+		})) {
+			const input = popover.querySelector(`#${inputId}`);
+			input?.addEventListener("input", () => {
+				if (input.value.trim()) applyPreview(el, cssProp, input.value.trim());
+			});
+		}
+		const marginInput = popover.querySelector("#pt-edit-margin");
+		marginInput?.addEventListener("input", () => {
+			if (marginInput.value.trim()) applyPreview(el, "margin", marginInput.value.trim());
+		});
+		const paddingInput = popover.querySelector("#pt-edit-padding");
+		paddingInput?.addEventListener("input", () => {
+			if (paddingInput.value.trim()) applyPreview(el, "padding", paddingInput.value.trim());
 		});
 		popover.querySelectorAll(".pt-class-chip").forEach((chip) => {
 			chip.addEventListener("click", () => {
@@ -1148,7 +1193,10 @@
 			closeBtn.style.background = tokens.color.surface.elevated;
 			closeBtn.style.color = tokens.color.text.tertiary;
 		});
-		closeBtn.addEventListener("click", onCancel);
+		closeBtn.addEventListener("click", () => {
+			revertPreview();
+			onCancel();
+		});
 		cancelBtn.addEventListener("mouseenter", () => {
 			cancelBtn.style.background = tokens.color.surface.elevated;
 			cancelBtn.style.borderColor = tokens.color.text.tertiary;
@@ -1157,7 +1205,10 @@
 			cancelBtn.style.background = "transparent";
 			cancelBtn.style.borderColor = tokens.color.surface.border;
 		});
-		cancelBtn.addEventListener("click", onCancel);
+		cancelBtn.addEventListener("click", () => {
+			revertPreview();
+			onCancel();
+		});
 		saveBtn.addEventListener("mouseenter", () => {
 			saveBtn.style.background = tokens.color.primary[700];
 			saveBtn.style.transform = "translateY(-1px)";
@@ -1175,6 +1226,7 @@
 		saveBtn.addEventListener("click", () => {
 			const prompt = textarea.value.trim();
 			const changes = collectChanges();
+			revertPreview();
 			onSave(prompt, changes.bgColor || changes.textColor || existing?.colorSuggestion || "", changes);
 		});
 		popover.addEventListener("keydown", (e) => {
@@ -1184,11 +1236,13 @@
 			}
 			if (e.key === "Escape") {
 				e.preventDefault();
+				revertPreview();
 				onCancel();
 			}
 		});
 	}
 	function hidePopover() {
+		revertPreview();
 		popover?.remove();
 		popover = null;
 	}
@@ -1527,20 +1581,52 @@
 	//#region src/review-panel.ts
 	var PANEL_ID = "pt-review-panel";
 	var panel = null;
-	function compactProps(a) {
-		const s = a.styles;
-		const parts = [];
-		parts.push(`<span style="font-family:${tokens.font.mono};font-size:${tokens.font.size.xs};">${s.font.family} ${s.font.size} · ${s.font.weight}</span>`);
-		const colorDot = (hex) => `<span style="
-    display:inline-block;
-    width:10px;height:10px;
-    background:${hex};
-    border-radius:${tokens.radius.full};
-    border:1px solid rgba(255,255,255,0.15);
-    vertical-align:middle;
+	function colorDot(hex) {
+		return `<span style="
+    display:inline-block;width:10px;height:10px;
+    background:${hex};border-radius:${tokens.radius.full};
+    border:1px solid rgba(255,255,255,0.15);vertical-align:middle;
   "></span>`;
-		parts.push(`${colorDot(s.color.text)} ${s.color.text} ${colorDot(s.color.background)} ${s.color.background}`);
-		return parts.join("<span style=\"color:" + tokens.color.text.tertiary + ";margin:0 6px;\">·</span>");
+	}
+	function changeLine(label, from, to, fromDot, toDot) {
+		return `<div style="font-size:${tokens.font.size.xs};color:${tokens.color.text.secondary};margin-bottom:2px;">
+    <span style="color:${tokens.color.text.tertiary};">${label}:</span>
+    ${fromDot || ""}<span style="text-decoration:line-through;opacity:0.6;">${from}</span>
+    <span style="color:${tokens.color.text.tertiary};">→</span>
+    ${toDot || ""}<span style="color:${tokens.color.primary[400]};">${to}</span>
+  </div>`;
+	}
+	function renderChanges(a) {
+		const c = a.changes;
+		if (!c) return "";
+		const lines = [];
+		if (c.text !== void 0) lines.push(changeLine("Text", `"${a.textContent}"`, `"${c.text}"`));
+		if (c.textColor) lines.push(changeLine("Text", a.styles.color.text, c.textColor, colorDot(a.styles.color.text) + " ", colorDot(c.textColor) + " "));
+		if (c.bgColor) lines.push(changeLine("Bg", a.styles.color.background, c.bgColor, colorDot(a.styles.color.background) + " ", colorDot(c.bgColor) + " "));
+		if (c.fontSize) lines.push(changeLine("Size", a.styles.font.size, c.fontSize));
+		if (c.fontWeight) lines.push(changeLine("Weight", a.styles.font.weight, c.fontWeight));
+		if (c.lineHeight) lines.push(changeLine("Height", a.styles.font.lineHeight, c.lineHeight));
+		if (c.margin) lines.push(changeLine("Margin", a.styles.spacing.margin, c.margin));
+		if (c.padding) lines.push(changeLine("Padding", a.styles.spacing.padding, c.padding));
+		if (c.removeClasses?.length) lines.push(`<div style="font-size:${tokens.font.size.xs};color:${tokens.color.error};margin-bottom:2px;">
+      <span style="color:${tokens.color.text.tertiary};">Remove:</span>
+      <span style="font-family:${tokens.font.mono};">${c.removeClasses.join(" ")}</span>
+    </div>`);
+		if (c.addClasses?.length) lines.push(`<div style="font-size:${tokens.font.size.xs};color:${tokens.color.success};margin-bottom:2px;">
+      <span style="color:${tokens.color.text.tertiary};">Add:</span>
+      <span style="font-family:${tokens.font.mono};">${c.addClasses.join(" ")}</span>
+    </div>`);
+		return lines.length > 0 ? lines.join("") : "";
+	}
+	function compactProps(a) {
+		const changes = renderChanges(a);
+		if (changes) return changes;
+		const s = a.styles;
+		return `<span style="font-family:${tokens.font.mono};font-size:${tokens.font.size.xs};">
+    ${s.font.family} ${s.font.size} · ${s.font.weight}
+  </span>
+  <span style="color:${tokens.color.text.tertiary};margin:0 4px;">·</span>
+  ${colorDot(s.color.text)} ${colorDot(s.color.background)}`;
 	}
 	function showReviewPanel(annotations, onEdit, onDelete, onCopy, onBack) {
 		hideReviewPanel();
@@ -1645,6 +1731,14 @@
                 font-size:${tokens.font.size.sm};
                 font-family:${tokens.font.mono};
               ">${a.selector}</span>
+              ${a.textContent ? `<span style="
+                color:${tokens.color.text.tertiary};
+                font-size:${tokens.font.size.xs};
+                max-width:120px;
+                overflow:hidden;
+                text-overflow:ellipsis;
+                white-space:nowrap;
+              ">"${a.textContent.slice(0, 30)}"</span>` : ""}
             </div>
             <button class="pt-delete-btn" data-id="${a.id}" style="
               background:transparent;

@@ -8,22 +8,63 @@ const PANEL_ID = 'pt-review-panel';
 
 let panel: HTMLDivElement | null = null;
 
-function compactProps(a: Annotation): string {
-  const s = a.styles;
-  const parts: string[] = [];
-  parts.push(`<span style="font-family:${tokens.font.mono};font-size:${tokens.font.size.xs};">${s.font.family} ${s.font.size} · ${s.font.weight}</span>`);
-
-  const colorDot = (hex: string) => `<span style="
-    display:inline-block;
-    width:10px;height:10px;
-    background:${hex};
-    border-radius:${tokens.radius.full};
-    border:1px solid rgba(255,255,255,0.15);
-    vertical-align:middle;
+function colorDot(hex: string): string {
+  return `<span style="
+    display:inline-block;width:10px;height:10px;
+    background:${hex};border-radius:${tokens.radius.full};
+    border:1px solid rgba(255,255,255,0.15);vertical-align:middle;
   "></span>`;
+}
 
-  parts.push(`${colorDot(s.color.text)} ${s.color.text} ${colorDot(s.color.background)} ${s.color.background}`);
-  return parts.join('<span style="color:' + tokens.color.text.tertiary + ';margin:0 6px;">·</span>');
+function changeLine(label: string, from: string, to: string, fromDot?: string, toDot?: string): string {
+  return `<div style="font-size:${tokens.font.size.xs};color:${tokens.color.text.secondary};margin-bottom:2px;">
+    <span style="color:${tokens.color.text.tertiary};">${label}:</span>
+    ${fromDot || ''}<span style="text-decoration:line-through;opacity:0.6;">${from}</span>
+    <span style="color:${tokens.color.text.tertiary};">→</span>
+    ${toDot || ''}<span style="color:${tokens.color.primary[400]};">${to}</span>
+  </div>`;
+}
+
+function renderChanges(a: Annotation): string {
+  const c = a.changes;
+  if (!c) return '';
+  const lines: string[] = [];
+
+  if (c.text !== undefined) lines.push(changeLine('Text', `"${a.textContent}"`, `"${c.text}"`));
+  if (c.textColor) lines.push(changeLine('Text', a.styles.color.text, c.textColor, colorDot(a.styles.color.text) + ' ', colorDot(c.textColor) + ' '));
+  if (c.bgColor) lines.push(changeLine('Bg', a.styles.color.background, c.bgColor, colorDot(a.styles.color.background) + ' ', colorDot(c.bgColor) + ' '));
+  if (c.fontSize) lines.push(changeLine('Size', a.styles.font.size, c.fontSize));
+  if (c.fontWeight) lines.push(changeLine('Weight', a.styles.font.weight, c.fontWeight));
+  if (c.lineHeight) lines.push(changeLine('Height', a.styles.font.lineHeight, c.lineHeight));
+  if (c.margin) lines.push(changeLine('Margin', a.styles.spacing.margin, c.margin));
+  if (c.padding) lines.push(changeLine('Padding', a.styles.spacing.padding, c.padding));
+  if (c.removeClasses?.length) {
+    lines.push(`<div style="font-size:${tokens.font.size.xs};color:${tokens.color.error};margin-bottom:2px;">
+      <span style="color:${tokens.color.text.tertiary};">Remove:</span>
+      <span style="font-family:${tokens.font.mono};">${c.removeClasses.join(' ')}</span>
+    </div>`);
+  }
+  if (c.addClasses?.length) {
+    lines.push(`<div style="font-size:${tokens.font.size.xs};color:${tokens.color.success};margin-bottom:2px;">
+      <span style="color:${tokens.color.text.tertiary};">Add:</span>
+      <span style="font-family:${tokens.font.mono};">${c.addClasses.join(' ')}</span>
+    </div>`);
+  }
+
+  return lines.length > 0 ? lines.join('') : '';
+}
+
+function compactProps(a: Annotation): string {
+  // Show changes if any, otherwise fall back to current properties
+  const changes = renderChanges(a);
+  if (changes) return changes;
+
+  const s = a.styles;
+  return `<span style="font-family:${tokens.font.mono};font-size:${tokens.font.size.xs};">
+    ${s.font.family} ${s.font.size} · ${s.font.weight}
+  </span>
+  <span style="color:${tokens.color.text.tertiary};margin:0 4px;">·</span>
+  ${colorDot(s.color.text)} ${colorDot(s.color.background)}`;
 }
 
 export function showReviewPanel(
@@ -141,6 +182,14 @@ export function showReviewPanel(
                 font-size:${tokens.font.size.sm};
                 font-family:${tokens.font.mono};
               ">${a.selector}</span>
+              ${a.textContent ? `<span style="
+                color:${tokens.color.text.tertiary};
+                font-size:${tokens.font.size.xs};
+                max-width:120px;
+                overflow:hidden;
+                text-overflow:ellipsis;
+                white-space:nowrap;
+              ">"${a.textContent.slice(0, 30)}"</span>` : ''}
             </div>
             <button class="pt-delete-btn" data-id="${a.id}" style="
               background:transparent;
