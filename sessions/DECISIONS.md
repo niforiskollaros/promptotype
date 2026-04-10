@@ -36,6 +36,24 @@
 **Decision**: Migrated to niforiskollaros/promptotype as the public distribution repo.
 **Rationale**: Simplest path to public distribution without enterprise policy issues. Install script, npm, and CI all work against the public repo.
 
+## 2026-04-09: Chrome Extension Replaces Proxy as Primary Injection
+
+**Context**: Proxy broke on Next.js (hop-by-hop headers), then broke on Shiplex (different CSS delivery). Every framework has different quirks. Non-technical users can't debug proxy issues.
+**Decision**: Chrome extension injects overlay directly via Shadow DOM. Proxy remains as fallback.
+**Rationale**: Extension has direct DOM access — no headers, no encoding, no framework-specific hacks. Shadow DOM isolates overlay CSS from host page. Proven on Shiplex (fully styled) where proxy completely failed.
+
+## 2026-04-09: MCP Server for Agent Delivery
+
+**Context**: Need a standard way to deliver annotations from browser to any AI coding agent.
+**Decision**: Local MCP server (`promptotype serve`) with stdio transport for agents and HTTP endpoint for extension.
+**Rationale**: MCP is universally supported (Codex, Cursor, Gemini, Claude Code, Copilot, Windsurf). stdio is the most compatible transport. HTTP endpoint allows the extension (which can't do stdio) to communicate with the server.
+
+## 2026-04-09: Shadow DOM for Overlay Isolation
+
+**Context**: Overlay CSS was potentially affected by host page resets and Tailwind classes.
+**Decision**: Inject all overlay UI into a Shadow DOM attached to a host element on the page.
+**Rationale**: Shadow DOM prevents CSS leakage in both directions. Host page styles can't break the overlay, overlay styles can't affect the page. Required refactoring all 9 modules to use a context-based root container.
+
 ## 2026-04-05: Session Token for Proxy Endpoint
 
 **Context**: Codex adversarial review flagged that any JS on the proxied page could forge annotation submissions to the CLI.

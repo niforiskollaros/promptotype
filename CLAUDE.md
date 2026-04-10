@@ -11,28 +11,40 @@ A browser overlay tool that lets anyone select UI elements in a locally running 
 
 ## Architecture
 
-**Vanilla TypeScript** — single IIFE bundle (~66KB, ~14KB gzip), zero framework dependencies. Works in any browser, on any app.
+**Vanilla TypeScript** — single IIFE bundle (~69KB, ~14KB gzip), zero framework dependencies. Works in any browser, on any app.
 
-Built with **Vite** (IIFE library mode). No React, no framework. CLI is a **Bun-compiled binary** that proxies your app and injects the overlay.
+Built with **Vite** (IIFE library mode). No React, no framework. Two distribution modes:
+1. **Chrome Extension** (primary) — injects overlay via Shadow DOM, sends annotations to MCP server
+2. **CLI Proxy** (fallback) — Bun-compiled binary that proxies your app and injects the overlay
 
 ```
 src/
 ├── index.ts                 # Main orchestrator — mode management, event handling, toggle
+├── context.ts               # Shadow DOM context — threads UI root through all modules
 ├── types.ts                 # TypeScript interfaces (Annotation, ExtractedStyles, Mode)
 ├── styles.ts                # Design token system (colors, spacing, typography, shadows, transitions)
-├── extract-styles.ts        # getComputedStyle extraction + CSS selector generation
+├── extract-styles.ts        # getComputedStyle extraction + CSS selector generation + Color Level 4
 ├── highlight-overlay.ts     # Element highlight with box model visualization (margin/padding)
 ├── breadcrumb-bar.ts        # DOM path breadcrumb bar (top of viewport)
 ├── annotation-popover.ts    # Properties display + prompt textarea + color suggestion
 ├── pin-markers.ts           # Numbered pin markers on annotated elements
 ├── status-bar.ts            # Bottom bar with annotation count + Review & Submit button
 ├── review-panel.ts          # Right side panel listing all annotations + copy to clipboard
-└── output.ts                # Markdown generation + clipboard API + proxy submission
+└── output.ts                # Markdown generation + clipboard API + proxy/MCP submission
 
 cli/
-├── index.ts                 # CLI entry — arg parsing, auto-detect dev servers, open browser
+├── index.ts                 # CLI entry — arg parsing, auto-detect, `serve` subcommand
 ├── server.ts                # Proxy server — inject overlay, session token auth, annotation API
+├── mcp-server.ts            # MCP server — HTTP for extension + stdio for AI agents
 └── promptotype.md           # Slash command definition for AI coding agents
+
+extension/
+├── manifest.json            # Chrome Manifest V3
+├── background.js            # Service worker — injection, MCP health, message routing
+├── popup.html               # Extension popup UI
+├── popup.js                 # Popup logic — health check, inject/remove toggle
+├── overlay.js               # Built overlay IIFE (copied from dist/ during build)
+└── icons/                   # Extension icons (16, 48, 128px)
 
 npm/
 ├── postinstall.js           # Downloads platform binary from GitHub release
@@ -45,18 +57,34 @@ site/
 
 ## Distribution
 
+### Chrome Extension (primary)
+```bash
+# Load unpacked in chrome://extensions/ (dev mode)
+# Point to the extension/ directory
+
+# Build the extension
+npm run build:ext
+```
+
+### MCP Server (for AI agents)
+```bash
+# Install globally
+npm install -g promptotype
+
+# Start MCP server
+promptotype serve              # HTTP on port 4100, MCP on stdio
+
+# Register in Claude Code (once, globally)
+claude mcp add promptotype -s user -- promptotype serve
+```
+
+### CLI Proxy (fallback)
 ```bash
 # Install via curl
 curl -fsSL https://locusai.design/install.sh | bash
 
-# Install via npm
-npm install -g promptotype
-
-# Run
+# Run proxy
 promptotype http://localhost:3000
-
-# From Claude Code / Codex / Gemini CLI
-/promptotype http://localhost:3000
 ```
 
 ## Releasing
@@ -132,11 +160,16 @@ npm run preview      # Preview production build
 
 | Feature | Status |
 |---------|--------|
-| MCP server + browser extension | Future — extension captures, MCP delivers to any agent |
+| Chrome extension + Shadow DOM injection | Done (v0.2.0, `feature/mcp_and_extention`) |
+| MCP server (get_annotations, wait_for_annotations) | Done (v0.2.0) |
+| Chrome Web Store submission | Next |
+| MCP sampling (auto push-to-agent) | Planned — eliminates manual "check annotations" step |
+| Remote MCP server (Railway) | Planned — always-on, no local process |
 | Screenshot capture per annotation | Future |
 | Design token mapping (Tailwind detection) | Future |
 | Component detection (React/Vue) | Future |
 | Figma comparison mode | Future |
+| Firefox / Safari extensions | Future |
 
 ## Session History
 
