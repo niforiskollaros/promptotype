@@ -34,6 +34,9 @@ export interface Annotation {
   selector: string;
   styles: ExtractedStyles;
   source: SourceLocation | null;
+  cssClasses: string[];
+  textContent: string;
+  screenshotDataUrl: string | null;
   prompt: string;
   colorSuggestion: string;
   timestamp: number;

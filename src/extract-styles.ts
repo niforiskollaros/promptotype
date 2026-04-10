@@ -144,6 +144,75 @@ function getComponentName(fiber: any): string | undefined {
   }
 }
 
+/** Extract CSS classes from an element, filtering out Promptotype's own classes. */
+export function extractCssClasses(el: HTMLElement): string[] {
+  if (!el.className || typeof el.className !== 'string') return [];
+  return el.className.trim().split(/\s+/).filter(c => c && !c.startsWith('pt-'));
+}
+
+/** Extract meaningful text content from an element (first 100 chars, first text node only). */
+export function extractTextContent(el: HTMLElement): string {
+  // Get direct text (not children's text)
+  let text = '';
+  for (const node of el.childNodes) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const t = node.textContent?.trim();
+      if (t) { text = t; break; }
+    }
+  }
+  // Fallback to innerText if no direct text node
+  if (!text) {
+    text = el.innerText?.trim() || '';
+  }
+  // Truncate
+  if (text.length > 100) text = text.slice(0, 100) + '...';
+  return text;
+}
+
+/**
+ * Capture a screenshot of an element.
+ * In extension mode, this requests a capture from the background script
+ * via a custom event. Returns null if not available.
+ */
+export async function captureElementScreenshot(el: HTMLElement): Promise<string | null> {
+  try {
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return null;
+
+    // Request screenshot from extension background script via custom event
+    return new Promise<string | null>((resolve) => {
+      const requestId = 'pt-capture-' + Date.now();
+
+      // Listen for the response
+      const handler = (e: Event) => {
+        const detail = (e as CustomEvent).detail;
+        if (detail?.requestId === requestId) {
+          window.removeEventListener('__pt_screenshot_response', handler);
+          resolve(detail.dataUrl || null);
+        }
+      };
+      window.addEventListener('__pt_screenshot_response', handler);
+
+      // Dispatch request
+      window.dispatchEvent(new CustomEvent('__pt_screenshot_request', {
+        detail: {
+          requestId,
+          rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+          dpr: window.devicePixelRatio || 1,
+        },
+      }));
+
+      // Timeout — don't block forever if extension isn't handling screenshots
+      setTimeout(() => {
+        window.removeEventListener('__pt_screenshot_response', handler);
+        resolve(null);
+      }, 3000);
+    });
+  } catch {
+    return null;
+  }
+}
+
 export function generateSelector(el: HTMLElement): string {
   const tag = el.tagName.toLowerCase();
   const id = el.id ? `#${el.id}` : '';

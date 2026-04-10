@@ -1,6 +1,6 @@
 import { Annotation, Mode } from './types';
 import { initContext, getUIRoot, getShadowHost } from './context';
-import { extractStyles, generateSelector, extractSourceLocation } from './extract-styles';
+import { extractStyles, generateSelector, extractSourceLocation, extractCssClasses, extractTextContent, captureElementScreenshot } from './extract-styles';
 import { showHighlight, hideHighlight, destroyHighlight } from './highlight-overlay';
 import { updateBreadcrumb, hideBreadcrumb, destroyBreadcrumb } from './breadcrumb-bar';
 import { showPopover, hidePopover, isPopoverOpen } from './annotation-popover';
@@ -133,15 +133,24 @@ function enterAnnotateMode(el: HTMLElement): void {
         existing.prompt = prompt;
         existing.colorSuggestion = colorSuggestion;
       } else {
-        annotations.push({
+        const annotation = {
           id: 'ann-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
           element: el,
           selector: generateSelector(el),
           styles,
           source,
+          cssClasses: extractCssClasses(el),
+          textContent: extractTextContent(el),
+          screenshotDataUrl: null as string | null,
           prompt,
           colorSuggestion,
           timestamp: Date.now(),
+        };
+        annotations.push(annotation);
+
+        // Capture screenshot async (non-blocking)
+        captureElementScreenshot(el).then(url => {
+          if (url) annotation.screenshotDataUrl = url;
         });
       }
       hidePopover();

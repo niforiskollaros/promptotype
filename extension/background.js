@@ -111,8 +111,53 @@ async function removeOverlay(tabId) {
   }
 }
 
-// Listen for messages from popup
+// Crop a full-page screenshot to an element's bounding rect
+async function cropScreenshot(fullDataUrl, rect, dpr) {
+  const img = await createImageBitmap(await (await fetch(fullDataUrl)).blob());
+
+  const padding = 8;
+  const x = Math.max(0, Math.round((rect.x - padding) * dpr));
+  const y = Math.max(0, Math.round((rect.y - padding) * dpr));
+  const w = Math.min(Math.round((rect.width + padding * 2) * dpr), img.width - x);
+  const h = Math.min(Math.round((rect.height + padding * 2) * dpr), img.height - y);
+
+  const canvas = new OffscreenCanvas(w, h);
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, x, y, w, h, 0, 0, w, h);
+
+  const blob = await canvas.convertToBlob({ type: 'image/png' });
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.readAsDataURL(blob);
+  });
+}
+
+// Listen for messages from popup and content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Screenshot capture request from content bridge
+  if (message.type === 'capture-screenshot') {
+    const tabId = sender.tab?.id;
+    if (!tabId) {
+      sendResponse({ dataUrl: null });
+      return true;
+    }
+
+    chrome.tabs.captureVisibleTab(null, { format: 'png' }, async (fullDataUrl) => {
+      if (chrome.runtime.lastError || !fullDataUrl) {
+        sendResponse({ dataUrl: null });
+        return;
+      }
+      try {
+        const cropped = await cropScreenshot(fullDataUrl, message.rect, message.dpr);
+        sendResponse({ dataUrl: cropped });
+      } catch {
+        sendResponse({ dataUrl: null });
+      }
+    });
+    return true;
+  }
+
   if (message.type === 'check-health') {
     checkMcpHealth(message.port || MCP_DEFAULT_PORT).then(sendResponse);
     return true; // async response

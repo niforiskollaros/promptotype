@@ -27,7 +27,13 @@
     "service_worker": "background.js",
     "type": "module"
   },
-  "content_scripts": [],
+  "content_scripts": [
+    {
+      "matches": ["http://localhost/*", "http://127.0.0.1/*"],
+      "js": ["content-bridge.js"],
+      "run_at": "document_idle"
+    }
+  ],
   "web_accessible_resources": [
     {
       "resources": ["overlay.js"],

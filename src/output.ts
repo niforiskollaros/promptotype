@@ -12,6 +12,12 @@ export function generateMarkdown(annotations: Annotation[]): string {
       const comp = a.source.componentName ? ` (${a.source.componentName})` : '';
       md += `**Source:** \`${loc}\`${comp}\n`;
     }
+    if (a.textContent) {
+      md += `**Text:** "${a.textContent}"\n`;
+    }
+    if (a.cssClasses.length > 0) {
+      md += `**Classes:** \`${a.cssClasses.join(' ')}\`\n`;
+    }
     md += `**Current styles:**\n`;
     md += `- Font: ${s.font.family}, ${s.font.size}, weight ${s.font.weight}, line-height ${s.font.lineHeight}\n`;
     md += `- Color: ${s.color.text} (on background ${s.color.background})\n`;

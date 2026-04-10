@@ -151,6 +151,63 @@
 			return;
 		}
 	}
+	/** Extract CSS classes from an element, filtering out Promptotype's own classes. */
+	function extractCssClasses(el) {
+		if (!el.className || typeof el.className !== "string") return [];
+		return el.className.trim().split(/\s+/).filter((c) => c && !c.startsWith("pt-"));
+	}
+	/** Extract meaningful text content from an element (first 100 chars, first text node only). */
+	function extractTextContent(el) {
+		let text = "";
+		for (const node of el.childNodes) if (node.nodeType === Node.TEXT_NODE) {
+			const t = node.textContent?.trim();
+			if (t) {
+				text = t;
+				break;
+			}
+		}
+		if (!text) text = el.innerText?.trim() || "";
+		if (text.length > 100) text = text.slice(0, 100) + "...";
+		return text;
+	}
+	/**
+	* Capture a screenshot of an element.
+	* In extension mode, this requests a capture from the background script
+	* via a custom event. Returns null if not available.
+	*/
+	async function captureElementScreenshot(el) {
+		try {
+			const rect = el.getBoundingClientRect();
+			if (rect.width === 0 || rect.height === 0) return null;
+			return new Promise((resolve) => {
+				const requestId = "pt-capture-" + Date.now();
+				const handler = (e) => {
+					const detail = e.detail;
+					if (detail?.requestId === requestId) {
+						window.removeEventListener("__pt_screenshot_response", handler);
+						resolve(detail.dataUrl || null);
+					}
+				};
+				window.addEventListener("__pt_screenshot_response", handler);
+				window.dispatchEvent(new CustomEvent("__pt_screenshot_request", { detail: {
+					requestId,
+					rect: {
+						x: rect.x,
+						y: rect.y,
+						width: rect.width,
+						height: rect.height
+					},
+					dpr: window.devicePixelRatio || 1
+				} }));
+				setTimeout(() => {
+					window.removeEventListener("__pt_screenshot_response", handler);
+					resolve(null);
+				}, 3e3);
+			});
+		} catch {
+			return null;
+		}
+	}
 	function generateSelector(el) {
 		const tag = el.tagName.toLowerCase();
 		const id = el.id ? `#${el.id}` : "";
@@ -1208,6 +1265,8 @@
 				const comp = a.source.componentName ? ` (${a.source.componentName})` : "";
 				md += `**Source:** \`${loc}\`${comp}\n`;
 			}
+			if (a.textContent) md += `**Text:** "${a.textContent}"\n`;
+			if (a.cssClasses.length > 0) md += `**Classes:** \`${a.cssClasses.join(" ")}\`\n`;
 			md += `**Current styles:**\n`;
 			md += `- Font: ${s.font.family}, ${s.font.size}, weight ${s.font.weight}, line-height ${s.font.lineHeight}\n`;
 			md += `- Color: ${s.color.text} (on background ${s.color.background})\n`;
@@ -1763,16 +1822,25 @@
 			if (existing) {
 				existing.prompt = prompt;
 				existing.colorSuggestion = colorSuggestion;
-			} else annotations.push({
-				id: "ann-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
-				element: el,
-				selector: generateSelector(el),
-				styles,
-				source,
-				prompt,
-				colorSuggestion,
-				timestamp: Date.now()
-			});
+			} else {
+				const annotation = {
+					id: "ann-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
+					element: el,
+					selector: generateSelector(el),
+					styles,
+					source,
+					cssClasses: extractCssClasses(el),
+					textContent: extractTextContent(el),
+					screenshotDataUrl: null,
+					prompt,
+					colorSuggestion,
+					timestamp: Date.now()
+				};
+				annotations.push(annotation);
+				captureElementScreenshot(el).then((url) => {
+					if (url) annotation.screenshotDataUrl = url;
+				});
+			}
 			hidePopover();
 			returnToInspect();
 		}, () => {
