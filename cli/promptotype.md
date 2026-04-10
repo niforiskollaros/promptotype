@@ -1,8 +1,13 @@
 Annotate UI elements in a running app and return structured design feedback.
 
-The user wants you to look at their running app and make design changes based on their annotations.
-This command waits for the user to submit annotations from the Promptotype browser extension, then returns them.
+The user wants to annotate UI elements in their running app and have you apply design changes. This is a continuous annotation session — you will receive multiple batches of annotations until the user is done.
 
-`!curl -sN http://localhost:4100/__pt__/api/wait`
+**Instructions — follow these exactly:**
 
-The output above contains structured design annotations with CSS selectors, current computed styles, and user prompts for each annotated element. Use these annotations to make the requested changes to the codebase.
+1. Call the `wait_for_annotations` tool from the `promptotype` MCP server. This blocks until the user submits annotations from their browser.
+2. When annotations arrive, apply the requested changes to the codebase.
+3. After applying, call `wait_for_annotations` again immediately to wait for the next batch.
+4. Keep repeating steps 2-3 until `wait_for_annotations` returns a message saying the session has ended (the user closed the overlay).
+5. When the session ends, stop looping and tell the user what you changed.
+
+Do NOT run shell commands to get annotations. Use the MCP tool directly. Start now by calling `wait_for_annotations`.

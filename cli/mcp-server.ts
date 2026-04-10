@@ -34,6 +34,18 @@ export function startMcpServer(options: McpServerOptions) {
   let batchTimestamp: number | null = null;
   let waitResolvers: Array<(markdown: string) => void> = [];
   let mcpConnected = false;
+  const CLOSE_SIGNAL = '__PT_SESSION_CLOSED__';
+
+  function signalClose(): void {
+    console.error(`\x1b[33m▸\x1b[0m Session closed by user — stopping continuous mode`);
+    // Resolve pending waiters with the close signal
+    for (const resolve of waitResolvers) {
+      resolve(CLOSE_SIGNAL);
+    }
+    waitResolvers = [];
+    currentBatch = null;
+    batchTimestamp = null;
+  }
 
   // --- MCP Server (stdio) for AI agents ---
   const mcp = new McpServer(
@@ -120,6 +132,14 @@ export function startMcpServer(options: McpServerOptions) {
       });
     }
 
+    // Close signal from extension — ends continuous mode
+    if (url.pathname === '/__pt__/api/close' && req.method === 'POST') {
+      signalClose();
+      return new Response(JSON.stringify({ status: 'closed' }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      });
+    }
+
     // CORS preflight
     if (req.method === 'OPTIONS') {
       return new Response(null, {
@@ -156,6 +176,11 @@ export function startMcpServer(options: McpServerOptions) {
             setTimeout(() => reject(new Error('timeout')), timeout);
           }),
         ]);
+        if (markdown === CLOSE_SIGNAL) {
+          return new Response('__PT_SESSION_CLOSED__', {
+            headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*' },
+          });
+        }
         return new Response(markdown, {
           headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*' },
         });
@@ -278,14 +303,26 @@ export function startMcpServer(options: McpServerOptions) {
           }),
         ]);
 
+        if (markdown === CLOSE_SIGNAL) {
+          return {
+            content: [{
+              type: 'text' as const,
+              text: 'The user has closed the Promptotype overlay. The annotation session has ended. Do not call wait_for_annotations again.',
+            }],
+          };
+        }
+
         return {
-          content: [{ type: 'text' as const, text: markdown }],
+          content: [{
+            type: 'text' as const,
+            text: `${markdown}\n\n---\n_Apply these changes, then call wait_for_annotations again to receive the next batch._`,
+          }],
         };
       } catch {
         return {
           content: [{
             type: 'text' as const,
-            text: `Timed out after ${timeout_seconds}s waiting for annotations. The user may not have submitted yet.`,
+            text: `Timed out after ${timeout_seconds}s waiting for annotations. The user may not have submitted yet. You can call wait_for_annotations again to keep waiting.`,
           }],
         };
       }

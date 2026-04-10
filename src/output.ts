@@ -106,6 +106,22 @@ export async function submitToProxy(markdown: string): Promise<boolean> {
  * Submit annotations to the local MCP server (extension mode).
  * Returns true if successful, false otherwise.
  */
+/**
+ * Signal to the MCP server that the annotation session has ended.
+ * Resolves any pending wait_for_annotations() with a close signal.
+ */
+export async function signalMcpClose(): Promise<void> {
+  try {
+    const port = (window as any).__PT_MCP_PORT__ || 4100;
+    await fetch(`http://localhost:${port}/__pt__/api/close`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch {
+    // Ignore — server might not be running
+  }
+}
+
 export async function submitToMcp(markdown: string): Promise<boolean> {
   try {
     const port = (window as any).__PT_MCP_PORT__ || 4100;

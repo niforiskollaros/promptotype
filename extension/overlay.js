@@ -1407,6 +1407,19 @@
 	* Submit annotations to the local MCP server (extension mode).
 	* Returns true if successful, false otherwise.
 	*/
+	/**
+	* Signal to the MCP server that the annotation session has ended.
+	* Resolves any pending wait_for_annotations() with a close signal.
+	*/
+	async function signalMcpClose() {
+		try {
+			const port = window.__PT_MCP_PORT__ || 4100;
+			await fetch(`http://localhost:${port}/__pt__/api/close`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" }
+			});
+		} catch {}
+	}
 	async function submitToMcp(markdown) {
 		try {
 			const port = window.__PT_MCP_PORT__ || 4100;
@@ -1872,6 +1885,7 @@
 		mode = "inactive";
 		annotations = [];
 		hoveredElement = null;
+		if (isMcpMode()) signalMcpClose();
 		document.documentElement.classList.remove("pt-inspect-cursor");
 		document.removeEventListener("mousemove", handleMouseMove, true);
 		document.removeEventListener("click", handleClick, true);

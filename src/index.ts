@@ -7,7 +7,7 @@ import { showPopover, hidePopover, isPopoverOpen } from './annotation-popover';
 import { updateAllPins, clearAllPins, onPinClick } from './pin-markers';
 import { updateStatusBar, destroyStatusBar } from './status-bar';
 import { showReviewPanel, hideReviewPanel, isReviewOpen } from './review-panel';
-import { generateMarkdown, copyToClipboard, isProxyMode, isMcpMode, submitToProxy, submitToMcp } from './output';
+import { generateMarkdown, copyToClipboard, isProxyMode, isMcpMode, submitToProxy, submitToMcp, signalMcpClose } from './output';
 import { tokens, injectGlobalStyles } from './styles';
 
 // --- State ---
@@ -97,6 +97,9 @@ function deactivate(): void {
   mode = 'inactive';
   annotations = [];
   hoveredElement = null;
+
+  // Signal MCP server that the session ended (resolves pending waits)
+  if (isMcpMode()) signalMcpClose();
 
   document.documentElement.classList.remove('pt-inspect-cursor');
   document.removeEventListener('mousemove', handleMouseMove, true);
