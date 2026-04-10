@@ -54,6 +54,18 @@
 **Decision**: Inject all overlay UI into a Shadow DOM attached to a host element on the page.
 **Rationale**: Shadow DOM prevents CSS leakage in both directions. Host page styles can't break the overlay, overlay styles can't affect the page. Required refactoring all 9 modules to use a context-based root container.
 
+## 2026-04-10: HTTP Wait Endpoint Over MCP Sampling
+
+**Context**: MCP is pull-based. Tried MCP sampling (`createMessage`) and log notifications to push annotations to the agent automatically. Claude Code ignores both — the agent only acts when it calls a tool.
+**Decision**: Added `/__pt__/api/wait` HTTP endpoint that blocks until annotations arrive. The slash command uses `curl` against this endpoint, replicating the proxy's blocking behavior.
+**Rationale**: The blocking curl pattern works because the agent is already waiting for the command's output. When annotations arrive, they flow straight into the conversation. This is the same pattern that made the proxy work, without the proxy's fragility.
+
+## 2026-04-10: Editable Popover Over Prompt-Only
+
+**Context**: Users had to describe every change in a text prompt ("change this color to red", "make text bigger"). Simple visual changes required unnecessary writing.
+**Decision**: Made text, colors, font properties, spacing, and Tailwind classes directly editable in the popover. Changes output as explicit before→after diffs. Prompt stays for complex instructions.
+**Rationale**: Direct editing eliminates the prompt for 80% of changes. The agent gets exact diffs instead of interpreting natural language, reducing misinterpretation.
+
 ## 2026-04-05: Session Token for Proxy Endpoint
 
 **Context**: Codex adversarial review flagged that any JS on the proxied page could forge annotation submissions to the CLI.
