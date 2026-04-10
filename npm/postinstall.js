@@ -1,14 +1,18 @@
 #!/usr/bin/env node
 
 /**
- * Postinstall script that downloads the correct platform binary
- * from the GitHub release matching the package version.
+ * Postinstall script:
+ * 1. Downloads the correct platform binary from GitHub release
+ * 2. Installs the /promptotype slash command for Claude Code
+ * 3. Registers the MCP server in Claude Code (if available)
  */
 
-import { createWriteStream, chmodSync, mkdirSync } from 'fs';
+import { createWriteStream, chmodSync, mkdirSync, copyFileSync, existsSync, readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { get } from 'https';
+import { execSync } from 'child_process';
+import { homedir } from 'os';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -51,13 +55,45 @@ function download(url, dest) {
   });
 }
 
+function installSlashCommand(binPath) {
+  const claudeCommandsDir = join(homedir(), '.claude', 'commands');
+  const slashCommandSrc = join(__dirname, '..', 'cli', 'promptotype.md');
+  const slashCommandDest = join(claudeCommandsDir, 'promptotype.md');
+
+  try {
+    if (existsSync(slashCommandSrc)) {
+      mkdirSync(claudeCommandsDir, { recursive: true });
+      copyFileSync(slashCommandSrc, slashCommandDest);
+      console.log(`Installed /promptotype slash command → ${slashCommandDest}`);
+    }
+  } catch (err) {
+    console.warn(`Could not install slash command: ${err.message}`);
+  }
+}
+
+function registerMcpServer(binPath) {
+  try {
+    // Check if claude CLI is available
+    execSync('which claude', { stdio: 'ignore' });
+
+    // Register the MCP server globally
+    execSync(`claude mcp add promptotype -s user -- ${binPath} serve`, {
+      stdio: 'ignore',
+    });
+    console.log('Registered promptotype MCP server in Claude Code (global)');
+  } catch {
+    // Claude CLI not available or registration failed — that's OK
+    console.log('Tip: To register MCP server manually, run:');
+    console.log(`  claude mcp add promptotype -s user -- ${binPath} serve`);
+  }
+}
+
 async function main() {
   const binaryName = getPlatformBinary();
   const binDir = join(__dirname, '..', 'bin');
   const binPath = join(binDir, BIN_NAME);
 
   // Read version from package.json
-  const { readFileSync } = await import('fs');
   const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf8'));
   const version = pkg.version;
 
@@ -70,13 +106,19 @@ async function main() {
   try {
     await download(url, binPath);
     chmodSync(binPath, 0o755);
-    console.log(`Installed promptotype to ${binPath}`);
+    console.log(`Installed promptotype binary → ${binPath}`);
   } catch (err) {
     console.error(`Failed to download binary: ${err.message}`);
     console.error(`URL: ${url}`);
     console.error('You can install manually from: https://github.com/niforiskollaros/promptotype/releases');
-    process.exit(1);
+    // Don't exit — still install slash command and register MCP
   }
+
+  // Install slash command for Claude Code
+  installSlashCommand(binPath);
+
+  // Register MCP server in Claude Code
+  registerMcpServer(binPath);
 }
 
 main();

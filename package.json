@@ -1,6 +1,6 @@
 {
   "name": "promptotype",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Browser overlay that lets you annotate UI elements and send structured feedback to AI coding agents",
   "main": "dist/promptotype.iife.js",
   "bin": {
@@ -23,6 +23,7 @@
     "dist/promptotype.iife.js",
     "npm/postinstall.js",
     "npm/cli.js",
+    "cli/promptotype.md",
     "bin/"
   ],
   "keywords": [
