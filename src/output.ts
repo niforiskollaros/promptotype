@@ -1,5 +1,6 @@
 import { Annotation } from './types';
 import { getUIRoot } from './context';
+import { categorizeTailwindClasses } from './tailwind';
 
 export function generateMarkdown(annotations: Annotation[]): string {
   let md = `## Design Annotations (${annotations.length} element${annotations.length !== 1 ? 's' : ''})\n\n`;
@@ -16,7 +17,18 @@ export function generateMarkdown(annotations: Annotation[]): string {
       md += `**Text:** "${a.textContent}"\n`;
     }
     if (a.cssClasses.length > 0) {
-      md += `**Classes:** \`${a.cssClasses.join(' ')}\`\n`;
+      const tw = categorizeTailwindClasses(a.cssClasses);
+      if (tw.detected && Object.keys(tw.categories).length > 0) {
+        md += `**Tailwind classes:**\n`;
+        for (const [cat, classes] of Object.entries(tw.categories)) {
+          md += `- ${cat}: \`${classes.join(' ')}\`\n`;
+        }
+        if (tw.other.length > 0) {
+          md += `- custom: \`${tw.other.join(' ')}\`\n`;
+        }
+      } else {
+        md += `**Classes:** \`${a.cssClasses.join(' ')}\`\n`;
+      }
     }
     md += `**Current styles:**\n`;
     md += `- Font: ${s.font.family}, ${s.font.size}, weight ${s.font.weight}, line-height ${s.font.lineHeight}\n`;

@@ -1254,6 +1254,74 @@
 		bar = null;
 	}
 	//#endregion
+	//#region src/tailwind.ts
+	var TAILWIND_PATTERNS = {
+		typography: [/^(text-(xs|sm|base|lg|xl|[2-9]xl)|font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black|sans|serif|mono)|leading-|tracking-|line-clamp-|truncate|uppercase|lowercase|capitalize|normal-case|italic|not-italic|underline|overline|line-through|no-underline|antialiased|subpixel-antialiased)/],
+		color: [
+			/^(text|bg|border|ring|outline|accent|caret|fill|stroke|decoration|shadow)-(transparent|current|black|white|inherit|slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|primary|secondary|muted|accent|foreground|background|destructive|popover|card|input)/,
+			/^(bg|text|border|ring)-\[#[0-9a-fA-F]+\]/,
+			/^(bg|text|border|ring)-\[rgb/,
+			/^(bg|text|border|ring)-\[hsl/,
+			/^(bg|text|border|ring)-\[oklch/
+		],
+		spacing: [/^(p|px|py|pt|pr|pb|pl|ps|pe|m|mx|my|mt|mr|mb|ml|ms|me|gap|gap-x|gap-y|space-x|space-y|indent)-(0|px|[0-9]|auto|\[)/],
+		sizing: [/^(w|h|min-w|min-h|max-w|max-h|size)-(0|px|full|screen|auto|min|max|fit|[0-9]|\[)/],
+		layout: [
+			/^(flex|grid|block|inline|hidden|contents|table|flow-root|inline-flex|inline-block|inline-grid)/,
+			/^(flex-(row|col|wrap|nowrap|1|auto|initial|none)|grow|shrink|basis-|order-)/,
+			/^(grid-cols-|grid-rows-|col-span-|row-span-|auto-cols-|auto-rows-)/,
+			/^(justify-|items-|self-|content-|place-)/
+		],
+		position: [/^(relative|absolute|fixed|sticky|static|inset|top|right|bottom|left|z)-?/],
+		border: [/^(border|rounded|divide|ring|outline)(-|$)/],
+		effects: [/^(shadow|opacity|mix-blend|bg-blend|blur|brightness|contrast|grayscale|hue-rotate|invert|saturate|sepia|backdrop-|drop-shadow)/],
+		transitions: [/^(transition|duration|ease|delay|animate)-?/],
+		overflow: [/^(overflow|overscroll)-/]
+	};
+	/** Check if a class looks like a Tailwind utility. */
+	function matchCategory(cls) {
+		const stripped = cls.replace(/^(sm|md|lg|xl|2xl|hover|focus|active|disabled|group-hover|dark|first|last|odd|even|placeholder|before|after|peer-|data-\[.*?\]):/, "");
+		for (const [category, patterns] of Object.entries(TAILWIND_PATTERNS)) for (const pattern of patterns) if (pattern.test(stripped)) return category;
+		if (/^[a-z]+-\[.+\]$/.test(stripped)) return "other-tailwind";
+		if (/^-[a-z]+-/.test(stripped)) return matchCategory(stripped.slice(1));
+		return null;
+	}
+	/** Detect if the page uses Tailwind (check for common markers). */
+	function detectTailwind() {
+		const styles = document.querySelectorAll("style, link[rel=\"stylesheet\"]");
+		for (const el of styles) if (el instanceof HTMLStyleElement && el.textContent) {
+			if (el.textContent.includes("--tw-") || el.textContent.includes("tailwindcss")) return true;
+		}
+		const root = getComputedStyle(document.documentElement);
+		if (root.getPropertyValue("--tw-ring-offset-width") || root.getPropertyValue("--tw-shadow")) return true;
+		return false;
+	}
+	var _isTailwind = null;
+	/** Categorize an element's CSS classes into Tailwind groups. */
+	function categorizeTailwindClasses(classes) {
+		if (_isTailwind === null) _isTailwind = detectTailwind();
+		if (!_isTailwind || classes.length === 0) return {
+			detected: false,
+			categories: {},
+			other: classes
+		};
+		const categories = {};
+		const other = [];
+		for (const cls of classes) {
+			const cat = matchCategory(cls);
+			if (cat) {
+				const key = cat === "other-tailwind" ? "other" : cat;
+				if (!categories[key]) categories[key] = [];
+				categories[key].push(cls);
+			} else other.push(cls);
+		}
+		return {
+			detected: true,
+			categories,
+			other
+		};
+	}
+	//#endregion
 	//#region src/output.ts
 	function generateMarkdown(annotations) {
 		let md = `## Design Annotations (${annotations.length} element${annotations.length !== 1 ? "s" : ""})\n\n`;
@@ -1266,7 +1334,14 @@
 				md += `**Source:** \`${loc}\`${comp}\n`;
 			}
 			if (a.textContent) md += `**Text:** "${a.textContent}"\n`;
-			if (a.cssClasses.length > 0) md += `**Classes:** \`${a.cssClasses.join(" ")}\`\n`;
+			if (a.cssClasses.length > 0) {
+				const tw = categorizeTailwindClasses(a.cssClasses);
+				if (tw.detected && Object.keys(tw.categories).length > 0) {
+					md += `**Tailwind classes:**\n`;
+					for (const [cat, classes] of Object.entries(tw.categories)) md += `- ${cat}: \`${classes.join(" ")}\`\n`;
+					if (tw.other.length > 0) md += `- custom: \`${tw.other.join(" ")}\`\n`;
+				} else md += `**Classes:** \`${a.cssClasses.join(" ")}\`\n`;
+			}
 			md += `**Current styles:**\n`;
 			md += `- Font: ${s.font.family}, ${s.font.size}, weight ${s.font.weight}, line-height ${s.font.lineHeight}\n`;
 			md += `- Color: ${s.color.text} (on background ${s.color.background})\n`;
