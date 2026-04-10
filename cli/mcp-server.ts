@@ -5,6 +5,12 @@
  * 1. HTTP endpoint on localhost for the Chrome extension to POST annotations
  * 2. MCP stdio interface for AI agents to consume annotations
  *
+ * When annotations arrive from the extension, the server:
+ * - Resolves any pending wait_for_annotations() calls (instant delivery)
+ * - Attempts MCP sampling to push annotations directly to the agent
+ * - Sends a log notification as a fallback signal
+ * - Stores the batch for get_annotations() retrieval
+ *
  * Usage:
  *   promptotype serve [--port 4100]
  *
@@ -27,12 +33,64 @@ export function startMcpServer(options: McpServerOptions) {
   let currentBatch: string | null = null;
   let batchTimestamp: number | null = null;
   let waitResolvers: Array<(markdown: string) => void> = [];
+  let mcpConnected = false;
+
+  // --- MCP Server (stdio) for AI agents ---
+  const mcp = new McpServer(
+    {
+      name: 'promptotype',
+      version: '0.2.0',
+    },
+    {
+      capabilities: {
+        logging: {},
+      },
+    },
+  );
+
+  async function pushToAgent(markdown: string): Promise<void> {
+    if (!mcpConnected) return;
+
+    const count = (markdown.match(/^### \d+\./gm) || []).length;
+
+    // 1. Send log notification — surfaces in agent UI
+    try {
+      await mcp.server.sendLoggingMessage({
+        level: 'info',
+        logger: 'promptotype',
+        data: `New design annotations received (${count} element${count !== 1 ? 's' : ''}). Use get_annotations() to retrieve and apply them.`,
+      });
+      console.error(`\x1b[35m▸\x1b[0m Sent log notification to agent`);
+    } catch (e) {
+      console.error(`\x1b[33m▸\x1b[0m Log notification failed: ${e instanceof Error ? e.message : e}`);
+    }
+
+    // 2. Try MCP sampling — ask the agent to apply the annotations directly
+    try {
+      await mcp.server.createMessage({
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: `Design annotations just arrived from the Promptotype browser extension. Please apply these changes to the codebase:\n\n${markdown}`,
+            },
+          },
+        ],
+        includeContext: 'thisServer',
+        maxTokens: 8192,
+      });
+      console.error(`\x1b[32m▸\x1b[0m Sampling request sent — agent should apply changes`);
+    } catch (e) {
+      // Sampling not supported by this client — that's OK, fall back to manual
+      console.error(`\x1b[33m▸\x1b[0m Sampling not available (${e instanceof Error ? e.message : 'unsupported'}) — agent can use get_annotations()`);
+    }
+  }
 
   function receiveBatch(markdown: string): void {
     currentBatch = markdown;
     batchTimestamp = Date.now();
 
-    // Count annotations from markdown
     const count = (markdown.match(/^### \d+\./gm) || []).length;
     console.error(`\x1b[32m▸ Received ${count} annotation${count !== 1 ? 's' : ''}\x1b[0m from extension`);
 
@@ -46,21 +104,19 @@ export function startMcpServer(options: McpServerOptions) {
     if (hadWaiters) {
       console.error(`\x1b[35m▸\x1b[0m Delivered to waiting agent`);
     } else {
-      console.error(`\x1b[35m▸\x1b[0m Stored — agent can call get_annotations() to retrieve`);
+      // No one is waiting — try to push proactively
+      pushToAgent(markdown);
     }
   }
 
-  // --- HTTP fetch handler (shared across port attempts) ---
+  // --- HTTP fetch handler ---
   async function handleRequest(req: Request): Promise<Response> {
     const url = new URL(req.url);
 
-    // Health check — extension uses this to detect if MCP server is running
+    // Health check
     if (url.pathname === '/__pt__/health') {
-      return new Response(JSON.stringify({ status: 'ok', mcp: true }), {
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
+      return new Response(JSON.stringify({ status: 'ok', mcp: true, connected: mcpConnected }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       });
     }
 
@@ -73,6 +129,42 @@ export function startMcpServer(options: McpServerOptions) {
           'Access-Control-Allow-Headers': 'Content-Type',
         },
       });
+    }
+
+    // Wait endpoint — blocks until annotations arrive (used by slash command)
+    if (url.pathname === '/__pt__/api/wait' && req.method === 'GET') {
+      // If there's already a batch, return it immediately
+      if (currentBatch) {
+        const batch = currentBatch;
+        currentBatch = null;
+        batchTimestamp = null;
+        return new Response(batch, {
+          headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*' },
+        });
+      }
+
+      // Block until annotations arrive (timeout: 5 min)
+      const timeoutParam = url.searchParams.get('timeout');
+      const timeout = timeoutParam ? parseInt(timeoutParam, 10) * 1000 : 300_000;
+
+      try {
+        const markdown = await Promise.race([
+          new Promise<string>((resolve) => {
+            waitResolvers.push(resolve);
+          }),
+          new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('timeout')), timeout);
+          }),
+        ]);
+        return new Response(markdown, {
+          headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*' },
+        });
+      } catch {
+        return new Response('Timed out waiting for annotations.', {
+          status: 408,
+          headers: { 'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*' },
+        });
+      }
     }
 
     // Annotation submission from extension
@@ -89,7 +181,7 @@ export function startMcpServer(options: McpServerOptions) {
 
         receiveBatch(markdown);
 
-        return new Response(JSON.stringify({ status: 'received' }), {
+        return new Response(JSON.stringify({ status: 'received', pushed: mcpConnected }), {
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
         });
       } catch {
@@ -110,13 +202,13 @@ export function startMcpServer(options: McpServerOptions) {
   for (let attempt = 0; attempt < 10; attempt++) {
     try {
       httpServer = Bun.serve({ port: actualPort, fetch: handleRequest });
-      break; // Success
+      break;
     } catch (e: any) {
       if (e?.code === 'EADDRINUSE') {
         actualPort++;
         continue;
       }
-      throw e; // Unexpected error
+      throw e;
     }
   }
 
@@ -125,13 +217,9 @@ export function startMcpServer(options: McpServerOptions) {
     process.exit(1);
   }
 
-  // --- MCP Server (stdio) for AI agents ---
-  const mcp = new McpServer({
-    name: 'promptotype',
-    version: '0.2.0',
-  });
+  // --- MCP Tools ---
 
-  // Tool: get_annotations — non-blocking, returns latest batch
+  // get_annotations — non-blocking, returns latest batch
   mcp.tool(
     'get_annotations',
     'Get the latest design annotations submitted from the Promptotype browser extension. Returns structured markdown with CSS selectors, computed styles, and user prompts for each annotated UI element. Use this when the user says to check, apply, or review their design annotations.',
@@ -162,7 +250,7 @@ export function startMcpServer(options: McpServerOptions) {
     },
   );
 
-  // Tool: wait_for_annotations — blocks until user submits
+  // wait_for_annotations — blocks until user submits
   mcp.tool(
     'wait_for_annotations',
     'Wait for the user to submit design annotations from the Promptotype browser extension. Blocks until annotations are received or timeout is reached. Use this when the user says to wait for their annotations or when they are about to annotate.',
@@ -170,7 +258,6 @@ export function startMcpServer(options: McpServerOptions) {
       timeout_seconds: z.number().optional().default(300).describe('Maximum seconds to wait (default: 300)'),
     },
     async ({ timeout_seconds }) => {
-      // If there's already a batch waiting, return it immediately
       if (currentBatch) {
         const batch = currentBatch;
         currentBatch = null;
@@ -180,7 +267,6 @@ export function startMcpServer(options: McpServerOptions) {
         };
       }
 
-      // Wait for a submission
       const timeout = (timeout_seconds ?? 300) * 1000;
       try {
         const markdown = await Promise.race([
@@ -206,14 +292,17 @@ export function startMcpServer(options: McpServerOptions) {
     },
   );
 
-  // Connect MCP to stdio
+  // --- Connect MCP to stdio ---
   const transport = new StdioServerTransport();
-  mcp.connect(transport);
+  mcp.connect(transport).then(() => {
+    mcpConnected = true;
+    console.error(`\x1b[32m▸\x1b[0m MCP connected to agent`);
+  });
 
   // Log to stderr (stdout is reserved for MCP protocol)
   console.error(`\x1b[35m▸ Promptotype MCP\x1b[0m server running`);
   console.error(`\x1b[35m▸\x1b[0m Extension endpoint: http://localhost:${httpServer.port}/__pt__/api/annotations`);
-  console.error(`\x1b[35m▸\x1b[0m MCP stdio ready — agents can call get_annotations() or wait_for_annotations()`);
+  console.error(`\x1b[35m▸\x1b[0m MCP stdio ready — waiting for agent connection...`);
 
   return { httpServer, mcp, transport };
 }
