@@ -7,7 +7,7 @@
  * 3. Registers the MCP server in Claude Code (if available)
  */
 
-import { createWriteStream, chmodSync, mkdirSync, copyFileSync, existsSync, readFileSync, writeFileSync } from 'fs';
+import { createWriteStream, chmodSync, mkdirSync, copyFileSync, existsSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { get } from 'https';
@@ -129,6 +129,12 @@ async function main() {
   console.log(`Downloading ${binaryName} v${version}...`);
 
   mkdirSync(binDir, { recursive: true });
+
+  // Clean up .gitkeep placeholder (only exists to ensure bin/ ships in the npm tarball)
+  const gitkeep = join(binDir, '.gitkeep');
+  if (existsSync(gitkeep)) {
+    try { unlinkSync(gitkeep); } catch {}
+  }
 
   try {
     await download(url, binPath);
