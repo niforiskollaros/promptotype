@@ -7,7 +7,7 @@
  * 3. Registers the MCP server in Claude Code (if available)
  */
 
-import { createWriteStream, chmodSync, mkdirSync, copyFileSync, existsSync, readFileSync } from 'fs';
+import { createWriteStream, chmodSync, mkdirSync, copyFileSync, existsSync, readFileSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { get } from 'https';
@@ -107,7 +107,6 @@ function registerMcpServer(binPath) {
     }
 
     if (changed) {
-      const { writeFileSync } = await import('fs');
       writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
       console.log('Auto-allowed promptotype MCP tools in Claude Code permissions');
     }
