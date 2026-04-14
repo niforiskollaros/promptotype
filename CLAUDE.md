@@ -8,6 +8,7 @@ A browser overlay tool that lets anyone select UI elements in a locally running 
 **Repo:** https://github.com/niforiskollaros/promptotype
 **npm:** [promptotype](https://www.npmjs.com/package/promptotype)
 **Landing page:** https://locusai.design
+**Current version:** 0.2.5
 
 ## Architecture
 
@@ -49,13 +50,33 @@ extension/
 └── icons/                   # Extension icons (16, 48, 128px)
 
 npm/
-├── postinstall.js           # Downloads binary + installs slash command + registers MCP + auto-allows tools
+├── postinstall.js           # Downloads binary, cleans up .gitkeep, installs slash command, registers MCP, auto-allows tools
 └── cli.js                   # Thin Node.js wrapper that execs the binary
 
 site/
 ├── index.html               # Landing page (locusai.design)
 └── vercel.json              # Rewrite /install.sh to raw GitHub
 ```
+
+## npm Package
+
+The npm package ships a lightweight ~26KB tarball. The heavy binary (~62MB) is downloaded per-platform by the postinstall script from GitHub Releases.
+
+**What ships in the tarball:**
+- `dist/promptotype.iife.js` — overlay bundle
+- `npm/postinstall.js` — downloads binary + setup
+- `npm/cli.js` — thin wrapper that execs the binary
+- `cli/promptotype.md` — slash command definition
+- `bin/.gitkeep` — placeholder so `bin/` directory exists (postinstall cleans this up)
+
+**What postinstall does:**
+1. Removes `bin/.gitkeep` placeholder
+2. Downloads the correct platform binary from GitHub Releases (`v{version}`)
+3. Installs `/promptotype` slash command to `~/.claude/commands/`
+4. Registers MCP server in Claude Code (`claude mcp add`)
+5. Auto-allows `wait_for_annotations` and `get_annotations` MCP tools in `~/.claude/settings.json`
+
+**Dependencies:** All devDependencies only. `@modelcontextprotocol/sdk` is bundled into the Bun binary at build time, not needed at runtime by the npm package.
 
 ## Distribution
 
@@ -70,13 +91,13 @@ npm run build:ext
 
 ### MCP Server (for AI agents)
 ```bash
-# Install globally
+# Install globally (postinstall handles everything)
 npm install -g promptotype
 
-# Start MCP server
+# Or start MCP server manually
 promptotype serve              # HTTP on port 4100, MCP on stdio
 
-# Register in Claude Code (once, globally)
+# Register in Claude Code manually (if postinstall didn't run)
 claude mcp add promptotype -s user -- promptotype serve
 ```
 
@@ -91,13 +112,23 @@ promptotype http://localhost:3000
 
 ## Releasing
 
+### GitHub Release (binaries)
 Push a tag — CI builds all 4 platform binaries and creates a GitHub release automatically:
 
 ```bash
 git tag v0.x.x && git push origin v0.x.x
 ```
 
-For npm, bump version in package.json and run `npm publish`.
+### npm Release
+Bump version in **both** files, then publish:
+1. `package.json` — `version` field
+2. `cli/mcp-server.ts` — `version` in MCP server constructor
+
+```bash
+npm publish
+```
+
+The postinstall downloads binaries from `github.com/.../releases/download/v{version}/...`, so the GitHub release tag **must match** the npm version.
 
 ## User Flow
 
@@ -176,7 +207,7 @@ npm run dev            # Start dev server with sample app (index.html) on port 3
 npm run build          # Build dist/promptotype.iife.js
 npm run build:ext      # Build overlay + copy to extension/overlay.js
 npm run build:cli      # Build CLI binary for current platform
-npm run build:cli:all  # Build for all 4 platforms (darwin/linux × arm64/x64)
+npm run build:cli:all  # Build for all 4 platforms (darwin/linux x arm64/x64)
 npm run test:app       # Start mock app (static mode) on port 3000
 npm run test:app:nextjs # Start mock app (Next.js mode with basePath)
 npm run test:proxy     # Run proxy against localhost:3000
@@ -195,6 +226,7 @@ npm run preview        # Preview production build
 | Tailwind class detection + categorization | Done (v0.2.0) |
 | Before→after change diffs in output | Done (v0.2.0) |
 | Screenshot capture per annotation | Done (v0.2.0, extension only) |
+| npm package hygiene (postinstall fix, devDeps, no binary in tarball) | Done (v0.2.5) |
 | Chrome Web Store submission | Next |
 | Remote MCP server (Railway) | Planned — always-on, no local process |
 | Companion Vite plugin for source location (React 19+) | Planned |
