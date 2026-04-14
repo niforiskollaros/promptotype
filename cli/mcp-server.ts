@@ -51,7 +51,7 @@ export function startMcpServer(options: McpServerOptions) {
   const mcp = new McpServer(
     {
       name: 'promptotype',
-      version: '0.2.6',
+      version: '0.2.7',
     },
     {
       capabilities: {

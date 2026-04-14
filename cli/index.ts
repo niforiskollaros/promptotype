@@ -52,7 +52,7 @@ if (args.includes('-h')) args.splice(args.indexOf('-h'), 1);
 
 if (helpFlag) {
   const bin = 'promptotype';
-  console.error(`
+  console.log(`
   Promptotype — Annotate UI elements, send structured feedback to AI agents
 
   Usage:
