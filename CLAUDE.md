@@ -112,23 +112,38 @@ promptotype http://localhost:3000
 
 ## Releasing
 
-### GitHub Release (binaries)
-Push a tag — CI builds all 4 platform binaries and creates a GitHub release automatically:
+**Order matters:** GitHub release (with binaries) must exist **before** npm publish, because postinstall downloads binaries from `github.com/.../releases/download/v{version}/...`. If you publish to npm first, users get a 404 on binary download.
+
+### Full release checklist
 
 ```bash
+# 1. Bump version in BOTH files
+#    - package.json → "version"
+#    - cli/mcp-server.ts → version in MCP server constructor
+
+# 2. Commit and push
+git add package.json cli/mcp-server.ts
+git commit -m "Bump to v0.x.x"
+git push
+
+# 3. Tag and push — CI builds binaries and creates GitHub release
 git tag v0.x.x && git push origin v0.x.x
-```
 
-### npm Release
-Bump version in **both** files, then publish:
-1. `package.json` — `version` field
-2. `cli/mcp-server.ts` — `version` in MCP server constructor
+# 4. Wait for CI to finish (binaries must exist before npm publish)
 
-```bash
+# 5. Publish to npm
 npm publish
 ```
 
-The postinstall downloads binaries from `github.com/.../releases/download/v{version}/...`, so the GitHub release tag **must match** the npm version.
+### If you publish a bad version to npm
+
+```bash
+# Deprecate (users see warning, can still install)
+npm deprecate promptotype@0.x.x "Reason. Use 0.x.y+"
+
+# Or unpublish (only within 72h, removes entirely)
+npm unpublish promptotype@0.x.x
+```
 
 ## User Flow
 
