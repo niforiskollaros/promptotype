@@ -66,6 +66,18 @@
 **Decision**: Made text, colors, font properties, spacing, and Tailwind classes directly editable in the popover. Changes output as explicit before→after diffs. Prompt stays for complex instructions.
 **Rationale**: Direct editing eliminates the prompt for 80% of changes. The agent gets exact diffs instead of interpreting natural language, reducing misinterpretation.
 
+## 2026-04-14: devDependencies Only — No Runtime npm Dependencies
+
+**Context**: `@modelcontextprotocol/sdk` was listed as a production dependency, causing ~30 packages to install on end-user machines. The CLI binary is pre-compiled by Bun and bundles all its own dependencies.
+**Decision**: Moved `@modelcontextprotocol/sdk` to devDependencies. The npm package now has zero production dependencies.
+**Rationale**: The Bun-compiled binary is self-contained — it doesn't use `node_modules` at runtime. The npm package only ships a thin Node.js wrapper (`npm/cli.js`) that execs the binary, plus the postinstall script (pure Node stdlib). No runtime dependency is needed.
+
+## 2026-04-14: bin/.gitkeep Instead of bin/ in npm files
+
+**Context**: The `files` field in package.json included `bin/`, which accidentally shipped a 62MB locally-downloaded binary in the v0.2.1 tarball.
+**Decision**: Changed `files` to include only `bin/.gitkeep`. Postinstall cleans up the placeholder before downloading the correct platform binary.
+**Rationale**: The `bin/` directory needs to exist in the tarball so postinstall can write to it, but should never contain actual binaries — those are downloaded per-platform from GitHub Releases.
+
 ## 2026-04-05: Session Token for Proxy Endpoint
 
 **Context**: Codex adversarial review flagged that any JS on the proxied page could forge annotation submissions to the CLI.
