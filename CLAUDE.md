@@ -8,7 +8,7 @@ A browser overlay tool that lets anyone select UI elements in a locally running 
 **Repo:** https://github.com/niforiskollaros/promptotype
 **npm:** [promptotype](https://www.npmjs.com/package/promptotype)
 **Landing page:** https://locusai.design
-**Current version:** 0.2.5
+**Current version:** 0.2.7
 
 ## Architecture
 
