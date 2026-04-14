@@ -1,6 +1,6 @@
 {
   "name": "promptotype",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Browser overlay that lets you annotate UI elements and send structured feedback to AI coding agents",
   "main": "dist/promptotype.iife.js",
   "bin": {
@@ -40,7 +40,7 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/niforiskollaros/promptotype.git"
+    "url": "git+https://github.com/niforiskollaros/promptotype.git"
   },
   "homepage": "https://github.com/niforiskollaros/promptotype",
   "devDependencies": {
