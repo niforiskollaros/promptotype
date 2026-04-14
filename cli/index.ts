@@ -46,14 +46,9 @@ function getOption(name: string, defaultValue: string): string {
   return defaultValue;
 }
 
-const noOpen = getFlag('no-open');
-const jsonOutput = getFlag('json');
-const helpFlag = getFlag('help') || getFlag('h');
-const port = parseInt(getOption('port', '4000'), 10);
-const timeout = parseInt(getOption('timeout', '0'), 10); // 0 = no timeout
-
-// Remaining arg is the target URL (optional now)
-const targetUrlArg = args[0];
+// Check help first — must exit before any async work
+const helpFlag = getFlag('help') || getFlag('h') || args.includes('-h');
+if (args.includes('-h')) args.splice(args.indexOf('-h'), 1);
 
 if (helpFlag) {
   const bin = 'promptotype';
@@ -85,6 +80,14 @@ if (helpFlag) {
   `);
   process.exit(0);
 }
+
+const noOpen = getFlag('no-open');
+const jsonOutput = getFlag('json');
+const port = parseInt(getOption('port', '4000'), 10);
+const timeout = parseInt(getOption('timeout', '0'), 10); // 0 = no timeout
+
+// Remaining arg is the target URL (optional now)
+const targetUrlArg = args[0];
 
 // --- MCP Server mode ---
 if (targetUrlArg === 'serve') {
