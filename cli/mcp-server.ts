@@ -52,7 +52,7 @@ export async function startMcpServer(options: McpServerOptions) {
   const mcp = new McpServer(
     {
       name: 'promptotype',
-      version: '0.3.3',
+      version: '0.3.4',
     },
     {
       capabilities: {

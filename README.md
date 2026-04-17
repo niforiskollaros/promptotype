@@ -160,7 +160,7 @@ claude mcp add promptotype -s user -- promptotype serve
 /promptotype
 ```
 
-The agent calls `wait_for_annotations()`, blocks until you submit from the browser, applies changes, then waits again. The loop continues until you close the overlay (`Cmd+Shift+D`).
+The agent calls `wait_for_annotations()`, blocks until you submit from the browser, applies changes, then waits again. The loop continues until you close the overlay (`Cmd+Shift+D` on Mac, `Ctrl+Shift+D` on Windows/Linux).
 
 ### One-shot mode (CLI proxy)
 
@@ -241,9 +241,9 @@ Examples:
 
 | Shortcut | Action |
 |----------|--------|
-| `Cmd+Shift+D` | Toggle overlay on/off |
+| `Cmd+Shift+D` / `Ctrl+Shift+D` | Toggle overlay on/off |
 | `Alt+Scroll` | Traverse element depth (parent/child) |
-| `Cmd+Enter` | Save annotation (in popover) |
+| `Cmd+Enter` / `Ctrl+Enter` | Save annotation (in popover) |
 | `Escape` | Close popover / close review panel / deactivate |
 
 ## How It's Built

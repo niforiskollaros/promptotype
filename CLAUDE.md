@@ -167,12 +167,12 @@ npm unpublish promptotype@0.x.x
   → Submit to Agent → annotations flow to agent → agent applies changes
   → Overlay clears, returns to INSPECT for next round
   → Agent calls wait_for_annotations() again — loop continues
-  → Deactivate overlay (Cmd+Shift+D) → close signal → agent stops looping
+  → Deactivate overlay (Cmd+Shift+D / Ctrl+Shift+D) → close signal → agent stops looping
 ```
 
 ### Standalone (clipboard fallback)
 ```
-Activate (Cmd+Shift+D or floating button)
+Activate (Cmd+Shift+D / Ctrl+Shift+D, or floating button in CLI proxy mode)
   → Same annotation flow
   → Copy to Clipboard → paste into any AI agent
 ```

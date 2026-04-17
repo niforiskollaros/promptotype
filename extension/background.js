@@ -193,15 +193,46 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         try {
           const [result] = await chrome.scripting.executeScript({
             target: { tabId: tabs[0].id },
-            func: () => !!document.getElementById('promptotype-root'),
+            func: () => {
+              const injected = !!document.getElementById('promptotype-root');
+              const mode = window.Promptotype?.getMode?.() ?? null;
+              return { injected, mode };
+            },
             world: 'MAIN',
           });
-          sendResponse({ injected: result?.result || false });
+          sendResponse({
+            injected: result?.result?.injected || false,
+            mode: result?.result?.mode ?? null,
+          });
         } catch {
-          sendResponse({ injected: false });
+          sendResponse({ injected: false, mode: null });
         }
       } else {
-        sendResponse({ injected: false });
+        sendResponse({ injected: false, mode: null });
+      }
+    });
+    return true;
+  }
+
+  if (message.type === 'toggle') {
+    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+      if (tabs[0]?.id) {
+        try {
+          const [result] = await chrome.scripting.executeScript({
+            target: { tabId: tabs[0].id },
+            func: () => {
+              if (!window.Promptotype) return { success: false, mode: null };
+              window.Promptotype.toggle();
+              return { success: true, mode: window.Promptotype.getMode?.() ?? null };
+            },
+            world: 'MAIN',
+          });
+          sendResponse(result?.result || { success: false, mode: null });
+        } catch (err) {
+          sendResponse({ success: false, mode: null, error: err.message });
+        }
+      } else {
+        sendResponse({ success: false, mode: null, error: 'No active tab' });
       }
     });
     return true;

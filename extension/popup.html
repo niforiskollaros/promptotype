@@ -85,13 +85,76 @@
       color: #6B6B74;
       line-height: 1.5;
     }
-    .hint kbd {
+    kbd {
       background: #2A2A2E;
       border: 1px solid #333338;
       border-radius: 3px;
-      padding: 1px 4px;
+      padding: 2px 6px;
       font-size: 10px;
-      font-family: 'SF Mono', monospace;
+      font-family: 'SF Mono', 'Cascadia Code', monospace;
+      color: #A0A0A8;
+    }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: #1C1C1F;
+      border: 1px solid #333338;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .toggle-row .toggle-label {
+      font-size: 12px;
+      color: #F0F0F2;
+      font-weight: 500;
+      flex: 1;
+    }
+    .toggle-row.disabled .toggle-label {
+      color: #6B6B74;
+    }
+    .switch {
+      position: relative;
+      width: 34px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .switch .slider {
+      position: absolute;
+      inset: 0;
+      background: #2A2A2E;
+      border: 1px solid #333338;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .switch .slider::before {
+      content: '';
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      left: 2px;
+      top: 2px;
+      background: #A0A0A8;
+      border-radius: 50%;
+      transition: transform 0.15s, background 0.15s;
+    }
+    .switch input:checked + .slider {
+      background: #7C3AED;
+      border-color: #7C3AED;
+    }
+    .switch input:checked + .slider::before {
+      transform: translateX(14px);
+      background: white;
+    }
+    .switch input:disabled + .slider {
+      cursor: not-allowed;
+      opacity: 0.5;
     }
     .error {
       color: #F87171;
@@ -110,7 +173,7 @@
       <line x1="7" y1="17" x2="14" y2="17" stroke-linecap="round"/>
     </svg>
     <h1>Promptotype</h1>
-    <span class="version">v0.2.0</span>
+    <span class="version" id="version">v0.3.3</span>
   </div>
 
   <div class="content">
@@ -120,14 +183,23 @@
       <span class="status-value" id="mcp-status">Checking...</span>
     </div>
 
-    <div class="status-row" id="overlay-status-row" style="display:none;">
-      <span class="status-dot on" id="overlay-dot"></span>
+    <div class="status-row">
+      <span class="status-dot off" id="overlay-dot"></span>
       <span class="status-label">Overlay</span>
-      <span class="status-value" id="overlay-status">Active</span>
+      <span class="status-value" id="overlay-status">Disconnected</span>
     </div>
 
     <div class="page-info" id="page-info" style="display:none;">
       <strong>Page:</strong> <span id="page-url"></span>
+    </div>
+
+    <div class="toggle-row disabled" id="toggle-row">
+      <span class="toggle-label">Toggle Overlay</span>
+      <label class="switch">
+        <input type="checkbox" id="toggle-input" disabled>
+        <span class="slider"></span>
+      </label>
+      <kbd id="shortcut-kbd">Cmd+Shift+D</kbd>
     </div>
 
     <button class="btn btn-primary" id="inject-btn" disabled>
@@ -137,7 +209,6 @@
     <div id="error-msg" class="error" style="display:none;"></div>
 
     <div class="hint">
-      <kbd>Cmd+Shift+D</kbd> to toggle overlay.<br>
       MCP server: <code>promptotype serve</code>
     </div>
   </div>

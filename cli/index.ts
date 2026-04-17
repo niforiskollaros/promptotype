@@ -222,9 +222,10 @@ const proxy = await startProxyServer({
 const proxyUrl = proxy.url;
 
 // Stderr for diagnostics (stdout is reserved for the annotation output)
+const shortcutLabel = process.platform === 'darwin' ? 'Cmd+Shift+D' : 'Ctrl+Shift+D';
 console.error(`\x1b[35m▸ Promptotype\x1b[0m proxy running at \x1b[1m${proxyUrl}\x1b[0m`);
 console.error(`\x1b[35m▸\x1b[0m Proxying → ${parsedUrl.toString()}`);
-console.error(`\x1b[35m▸\x1b[0m Waiting for annotations... (Cmd+Shift+D to activate overlay)\n`);
+console.error(`\x1b[35m▸\x1b[0m Waiting for annotations... (${shortcutLabel} to activate overlay)\n`);
 
 // --- Open browser ---
 if (!noOpen) {

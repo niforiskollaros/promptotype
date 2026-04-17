@@ -1,5 +1,5 @@
 import { Annotation, Mode } from './types';
-import { initContext, getUIRoot, getShadowHost } from './context';
+import { initContext, getUIRoot, getShadowHost, isShadowMode } from './context';
 import { extractStyles, generateSelector, extractSourceLocation, extractCssClasses, extractTextContent, captureElementScreenshot } from './extract-styles';
 import { showHighlight, hideHighlight, destroyHighlight } from './highlight-overlay';
 import { updateBreadcrumb, hideBreadcrumb, destroyBreadcrumb } from './breadcrumb-bar';
@@ -443,7 +443,9 @@ function toggle(): void {
   }
 }
 
-// --- Keyboard Shortcut (Cmd+Shift+D) ---
+const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/i.test(navigator.platform);
+const shortcutLabel = `${isMac ? 'Cmd' : 'Ctrl'}+Shift+D`;
+
 document.addEventListener('keydown', (e) => {
   if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'd') {
     e.preventDefault();
@@ -480,7 +482,7 @@ function createToggleButton(): void {
     <line x1="7" y1="13" x2="17" y2="13" stroke-linecap="round"/>
     <line x1="7" y1="17" x2="14" y2="17" stroke-linecap="round"/>
   </svg>`;
-  btn.title = 'Toggle Promptotype (Cmd+Shift+D)';
+  btn.title = `Toggle Promptotype (${shortcutLabel})`;
 
   btn.addEventListener('mouseenter', () => {
     btn.style.background = tokens.color.primary[700];
@@ -511,9 +513,13 @@ function init(): void {
   // Check if already initialized (search in the correct root)
   const root = getUIRoot();
   if (root.querySelector('#pt-toggle-button')) return;
-  createToggleButton();
+  // Floating button lives only in standalone/proxy mode.
+  // In extension (Shadow DOM) mode the popup owns activation.
+  if (!isShadowMode()) {
+    createToggleButton();
+  }
   console.log(
-    '%c Promptotype %c Ready — Cmd+Shift+D to activate',
+    `%c Promptotype %c Ready — ${shortcutLabel} to activate`,
     `background:${tokens.color.primary[600]};color:white;padding:2px 8px;border-radius:4px;font-weight:600`,
     `color:${tokens.color.primary[500]}`,
   );
@@ -538,4 +544,10 @@ if (!(window as any).__PT_MCP__) {
 }
 
 // Expose API for programmatic use
-(window as any).Promptotype = { activate, deactivate, toggle, initWithShadowDOM };
+(window as any).Promptotype = {
+  activate,
+  deactivate,
+  toggle,
+  initWithShadowDOM,
+  getMode: () => mode,
+};
