@@ -102,6 +102,40 @@ If the MCP registration didn't run automatically (e.g. Claude Code wasn't on you
 claude mcp add promptotype -s user -- promptotype serve
 ```
 
+## Updating
+
+Promptotype checks for new versions automatically. Whenever you run the CLI in a terminal, it checks the npm registry in the background (once per 24 hours, cached) and prints a small notice on stderr if a newer version is available:
+
+```
+╭──────────────────────────────────────╮
+│                                      │
+│   Update available 0.3.1 → 0.4.0     │
+│   Run npm i -g promptotype to update │
+│                                      │
+╰──────────────────────────────────────╯
+```
+
+To update, run whichever of these fits your setup:
+
+```bash
+# Latest stable
+npm install -g promptotype
+
+# Or the npm-native "update" alias
+npm update -g promptotype
+
+# Pin to a specific version
+npm install -g promptotype@0.3.1
+```
+
+The check is silent when piped (so it won't clutter scripts or the MCP stdio channel), and you can suppress it entirely with `NO_UPDATE_NOTIFIER=1` in your environment.
+
+To check your current version:
+
+```bash
+npm ls -g promptotype
+```
+
 ## Usage with Claude Code
 
 ### Continuous mode (extension + MCP)

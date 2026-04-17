@@ -16,8 +16,10 @@
  */
 
 import { spawn } from 'node:child_process';
+import updateNotifier from 'update-notifier';
 import { startProxyServer } from './server';
 import { startMcpServer } from './mcp-server';
+import pkg from '../package.json';
 
 // --- Common dev server ports to scan ---
 const COMMON_PORTS = [
@@ -85,6 +87,21 @@ const noOpen = getFlag('no-open');
 const jsonOutput = getFlag('json');
 const port = parseInt(getOption('port', '4000'), 10);
 const timeout = parseInt(getOption('timeout', '0'), 10); // 0 = no timeout
+
+// --- Check for updates (async, once per 24h, writes to stderr only) ---
+// Deferred notify doesn't fire in the MCP server mode (never exits cleanly),
+// so we invoke immediately. stderr is always safe: MCP JSON-RPC uses stdout.
+updateNotifier({
+  pkg: { name: pkg.name, version: pkg.version },
+  updateCheckInterval: 1000 * 60 * 60 * 24,
+  shouldNotifyInNpmScript: false,
+}).notify({
+  defer: false,
+  isGlobal: true,
+  message:
+    'Update available {currentVersion} → {latestVersion}\n' +
+    'Run {updateCommand} to update.',
+});
 
 // Remaining arg is the target URL (optional now)
 const targetUrlArg = args[0];

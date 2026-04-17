@@ -8,7 +8,7 @@ A browser overlay tool that lets anyone select UI elements in a locally running 
 **Repo:** https://github.com/niforiskollaros/promptotype
 **npm:** [promptotype](https://www.npmjs.com/package/promptotype)
 **Landing page:** https://locusai.design
-**Current version:** 0.2.7
+**Current version:** 0.3.1
 
 ## Architecture
 
@@ -79,7 +79,9 @@ The npm package ships a single ~190KB tarball (~980KB unpacked) — no platform 
 
 Zero network calls — everything ships in the tarball. No per-platform builds, no code signing, no Gatekeeper issues on macOS.
 
-**Dependencies at build time:** `@modelcontextprotocol/sdk`, `zod`, `ws`, `esbuild`, `tsx`, `vite`. All bundled into `dist/cli.mjs` at build time via esbuild — zero runtime dependencies.
+**Dependencies at build time:** `@modelcontextprotocol/sdk`, `zod`, `ws`, `update-notifier`, `esbuild`, `tsx`, `vite`. All bundled into `dist/cli.mjs` at build time via esbuild — zero runtime dependencies.
+
+**Update notifications:** The CLI uses `update-notifier` to check npm for newer versions once per 24 hours (cached in `~/Library/Preferences/update-notifier-promptotype` on macOS, `~/.config/` on Linux). The check runs in the background, writes to stderr only (never stdout — that would break MCP stdio JSON-RPC), and only shows the box to interactive TTYs. Users can suppress with `NO_UPDATE_NOTIFIER=1`.
 
 ## Distribution
 
@@ -244,6 +246,7 @@ npm run preview        # Preview production build
 | Screenshot capture per annotation | Done (v0.2.0, extension only) |
 | npm package hygiene (postinstall fix, devDeps, no binary in tarball) | Done (v0.2.5) |
 | Node.js distribution (drops Bun binary, fixes macOS 26 SIGKILL) | Done (v0.3.0) |
+| Update notifications (update-notifier on CLI startup) | Done (v0.3.1) |
 | Chrome Web Store submission | Next |
 | Remote MCP server (Railway) | Planned — always-on, no local process |
 | Companion Vite plugin for source location (React 19+) | Planned |
