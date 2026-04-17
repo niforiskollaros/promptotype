@@ -1,4 +1,3 @@
-#!/usr/bin/env bun
 /**
  * Promptotype CLI
  *
@@ -16,6 +15,7 @@
  *   promptotype serve --port 4200            # Custom MCP port
  */
 
+import { spawn } from 'node:child_process';
 import { startProxyServer } from './server';
 import { startMcpServer } from './mcp-server';
 
@@ -93,7 +93,7 @@ const targetUrlArg = args[0];
 if (targetUrlArg === 'serve') {
   // Use 4100 as default for serve mode (port var defaults to 4000 for proxy)
   const mcpPort = port === 4000 ? 4100 : port;
-  startMcpServer({ port: mcpPort });
+  await startMcpServer({ port: mcpPort });
   // Keep process alive — MCP server runs indefinitely
   await new Promise(() => {}); // never resolves
 }
@@ -195,13 +195,14 @@ const annotationsPromise = new Promise<string>((resolve) => {
   resolveAnnotations = resolve;
 });
 
-const { server, url: proxyUrl } = startProxyServer({
+const proxy = await startProxyServer({
   targetUrl: parsedUrl.toString(),
   port,
   onAnnotations: (markdown) => {
     resolveAnnotations?.(markdown);
   },
 });
+const proxyUrl = proxy.url;
 
 // Stderr for diagnostics (stdout is reserved for the annotation output)
 console.error(`\x1b[35m▸ Promptotype\x1b[0m proxy running at \x1b[1m${proxyUrl}\x1b[0m`);
@@ -216,7 +217,14 @@ if (!noOpen) {
     platform === 'win32' ? 'start' :
     'xdg-open';
 
-  Bun.spawn([openCmd, proxyUrl], { stdout: 'ignore', stderr: 'ignore' });
+  // `start` on Windows is a cmd.exe builtin; shell: true covers that case.
+  const child = spawn(openCmd, [proxyUrl], {
+    stdio: 'ignore',
+    detached: true,
+    shell: platform === 'win32',
+  });
+  child.on('error', () => { /* no browser, no problem */ });
+  child.unref();
 }
 
 // --- Timeout ---
@@ -224,8 +232,7 @@ let timeoutId: ReturnType<typeof setTimeout> | undefined;
 if (timeout > 0) {
   timeoutId = setTimeout(() => {
     console.error(`\n\x1b[33m▸ Timeout reached (${timeout}s) — exiting without annotations\x1b[0m`);
-    server.stop();
-    process.exit(1);
+    proxy.close().finally(() => process.exit(1));
   }, timeout * 1000);
 }
 
@@ -246,5 +253,5 @@ console.error(`\n\x1b[32m▸ Annotations received!\x1b[0m Shutting down proxy.`)
 
 // Brief delay so the HTTP response reaches the browser before we exit
 await new Promise(resolve => setTimeout(resolve, 500));
-server.stop();
+await proxy.close();
 process.exit(0);

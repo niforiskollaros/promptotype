@@ -1,108 +1,79 @@
 #!/bin/bash
 # Promptotype installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/niforiskollaros/promptotype/main/install.sh | bash
+# Usage: curl -fsSL https://locusai.design/install.sh | bash
+#
+# Since v0.3.0, Promptotype ships as a Node.js package. This script verifies
+# Node is installed at a supported version, then defers to `npm install -g`.
 
 set -euo pipefail
 
-REPO="niforiskollaros/promptotype"
-BIN_DIR="${HOME}/.local/bin"
-BIN_NAME="promptotype"
-
-# Detect OS and architecture
-OS="$(uname -s)"
-ARCH="$(uname -m)"
-
-case "$OS" in
-  Darwin) PLATFORM="darwin" ;;
-  Linux)  PLATFORM="linux" ;;
-  *)
-    echo "Error: Unsupported OS: $OS"
-    echo "Promptotype supports macOS and Linux."
-    exit 1
-    ;;
-esac
-
-case "$ARCH" in
-  arm64|aarch64) ARCH_SUFFIX="arm64" ;;
-  x86_64|amd64)  ARCH_SUFFIX="x64" ;;
-  *)
-    echo "Error: Unsupported architecture: $ARCH"
-    exit 1
-    ;;
-esac
-
-BINARY_NAME="${BIN_NAME}-${PLATFORM}-${ARCH_SUFFIX}"
+MIN_NODE_MAJOR=22
 
 echo ""
 echo "  Promptotype Installer"
 echo "  ====================="
 echo ""
-echo "  Platform: ${PLATFORM}-${ARCH_SUFFIX}"
-echo ""
 
-# Get latest release URL
-RELEASE_URL="https://github.com/${REPO}/releases/latest/download/${BINARY_NAME}"
-
-# Create bin directory
-mkdir -p "$BIN_DIR"
-
-# Download binary
-echo "  Downloading ${BINARY_NAME}..."
-if command -v curl &>/dev/null; then
-  curl -fsSL "$RELEASE_URL" -o "${BIN_DIR}/${BIN_NAME}"
-elif command -v wget &>/dev/null; then
-  wget -q "$RELEASE_URL" -O "${BIN_DIR}/${BIN_NAME}"
-else
-  echo "Error: curl or wget required"
+# --- Node.js check ---
+if ! command -v node >/dev/null 2>&1; then
+  echo "  Error: Node.js is required (>= ${MIN_NODE_MAJOR})."
+  echo ""
+  echo "  Install Node.js from https://nodejs.org/, then re-run this script."
+  echo "  Or install via a version manager:"
+  echo "    • brew:      brew install node"
+  echo "    • fnm:       fnm install ${MIN_NODE_MAJOR}"
+  echo "    • nvm:       nvm install ${MIN_NODE_MAJOR}"
+  echo ""
   exit 1
 fi
 
-chmod +x "${BIN_DIR}/${BIN_NAME}"
-echo "  Binary installed to ${BIN_DIR}/${BIN_NAME}"
+NODE_VERSION="$(node -v)"
+NODE_MAJOR="$(echo "${NODE_VERSION}" | sed -E 's/^v([0-9]+).*/\1/')"
 
-# Install slash command for Claude Code (and compatible tools)
-install_slash_command() {
-  local CMD_DIR="$1"
-  local TOOL_NAME="$2"
-
-  if [ -d "$(dirname "$CMD_DIR")" ]; then
-    mkdir -p "$CMD_DIR"
-    cat > "${CMD_DIR}/promptotype.md" << 'SLASHEOF'
-Annotate UI elements in a running app and return structured design feedback.
-
-The user wants you to look at their running app and make design changes based on their annotations.
-Run the Promptotype proxy to let them select elements, describe what they want changed, and submit structured feedback.
-
-`!~/.local/bin/promptotype $ARGUMENTS`
-
-The output above contains structured design annotations with CSS selectors, current computed styles, and user prompts for each annotated element. Use these annotations to make the requested changes to the codebase.
-SLASHEOF
-    echo "  Slash command installed for ${TOOL_NAME}"
-  fi
-}
-
-# Claude Code
-install_slash_command "${HOME}/.claude/commands" "Claude Code"
-
-# Codex
-install_slash_command "${HOME}/.codex/commands" "Codex"
-
-# Gemini CLI
-install_slash_command "${HOME}/.gemini/commands" "Gemini CLI"
-
-echo ""
-
-# Check PATH
-if ! echo "$PATH" | tr ':' '\n' | grep -q "^${BIN_DIR}$"; then
-  echo "  Note: ${BIN_DIR} is not in your PATH."
-  echo "  Add this to your shell profile:"
+if [ "${NODE_MAJOR}" -lt "${MIN_NODE_MAJOR}" ]; then
+  echo "  Error: Node.js ${NODE_VERSION} is too old."
+  echo "  Promptotype requires Node >= ${MIN_NODE_MAJOR}."
   echo ""
-  echo "    export PATH=\"\${HOME}/.local/bin:\${PATH}\""
+  echo "  Upgrade your Node.js install and try again."
   echo ""
+  exit 1
 fi
 
+if ! command -v npm >/dev/null 2>&1; then
+  echo "  Error: npm is not available."
+  echo "  npm normally ships with Node.js — reinstall Node.js from https://nodejs.org/"
+  echo ""
+  exit 1
+fi
+
+echo "  Using Node ${NODE_VERSION} — installing promptotype via npm..."
+echo ""
+
+# --- Install ---
+# Prefer -g when we clearly own node_modules; fall back to --prefix for
+# Homebrew-managed Node on macOS where -g wants sudo.
+if npm install -g promptotype; then
+  :
+elif [ "$(uname -s)" = "Darwin" ] && command -v brew >/dev/null 2>&1; then
+  echo ""
+  echo "  Global install failed (likely a permission issue)."
+  echo "  Retrying with sudo..."
+  sudo npm install -g promptotype
+else
+  echo ""
+  echo "  npm install -g failed. Try one of:"
+  echo "    sudo npm install -g promptotype"
+  echo "    npm install -g promptotype --prefix \"\$HOME/.npm-global\""
+  exit 1
+fi
+
+echo ""
 echo "  Done! Usage:"
 echo ""
-echo "    promptotype http://localhost:3000"
-echo "    /promptotype http://localhost:3000    (from Claude Code)"
+echo "    promptotype                              # auto-detect dev server"
+echo "    promptotype http://localhost:3000        # proxy a specific URL"
+echo "    promptotype serve                        # start MCP server (Claude Code)"
+echo ""
+echo "  The /promptotype slash command and MCP server were registered automatically"
+echo "  if the Claude Code CLI is installed."
 echo ""

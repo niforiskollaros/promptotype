@@ -21,12 +21,13 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
+import { serveFetch } from './node-adapter';
 
 export interface McpServerOptions {
   port: number;
 }
 
-export function startMcpServer(options: McpServerOptions) {
+export async function startMcpServer(options: McpServerOptions) {
   const { port } = options;
 
   // --- Annotation state ---
@@ -51,7 +52,7 @@ export function startMcpServer(options: McpServerOptions) {
   const mcp = new McpServer(
     {
       name: 'promptotype',
-      version: '0.2.7',
+      version: '0.3.0',
     },
     {
       capabilities: {
@@ -220,25 +221,13 @@ export function startMcpServer(options: McpServerOptions) {
     return new Response('Not Found', { status: 404 });
   }
 
-  // --- Start HTTP server with port retry ---
-  let httpServer: ReturnType<typeof Bun.serve> | null = null;
-  let actualPort = port;
-
-  for (let attempt = 0; attempt < 10; attempt++) {
-    try {
-      httpServer = Bun.serve({ port: actualPort, fetch: handleRequest });
-      break;
-    } catch (e: any) {
-      if (e?.code === 'EADDRINUSE') {
-        actualPort++;
-        continue;
-      }
-      throw e;
-    }
-  }
-
-  if (!httpServer) {
-    console.error(`\x1b[31m▸ Could not find an open port (tried ${port}-${actualPort})\x1b[0m`);
+  // --- Start HTTP server (port-retry handled by adapter) ---
+  let httpServer;
+  try {
+    httpServer = await serveFetch({ port, fetch: handleRequest });
+  } catch (err) {
+    console.error(`\x1b[31m▸ Could not bind to any port starting from ${port}\x1b[0m`);
+    console.error(err);
     process.exit(1);
   }
 
@@ -341,5 +330,5 @@ export function startMcpServer(options: McpServerOptions) {
   console.error(`\x1b[35m▸\x1b[0m Extension endpoint: http://localhost:${httpServer.port}/__pt__/api/annotations`);
   console.error(`\x1b[35m▸\x1b[0m MCP stdio ready — waiting for agent connection...`);
 
-  return { httpServer, mcp, transport };
+  return { httpServer: httpServer.server, port: httpServer.port, mcp, transport };
 }

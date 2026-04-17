@@ -1,30 +1,30 @@
 {
   "name": "promptotype",
-  "version": "0.2.7",
+  "version": "0.3.0",
   "description": "Browser overlay that lets you annotate UI elements and send structured feedback to AI coding agents",
   "main": "dist/promptotype.iife.js",
   "bin": {
-    "promptotype": "npm/cli.js"
+    "promptotype": "dist/cli.mjs"
   },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:cli": "node scripts/build-cli.mjs",
+    "build:all": "npm run build && npm run build:cli",
     "preview": "vite preview",
-    "build:cli": "vite build && bun build cli/index.ts --outfile dist/promptotype --compile",
-    "build:cli:all": "vite build && bun build cli/index.ts --outfile dist/promptotype-darwin-arm64 --compile --target=bun-darwin-arm64 && bun build cli/index.ts --outfile dist/promptotype-darwin-x64 --compile --target=bun-darwin-x64 && bun build cli/index.ts --outfile dist/promptotype-linux-x64 --compile --target=bun-linux-x64 && bun build cli/index.ts --outfile dist/promptotype-linux-arm64 --compile --target=bun-linux-arm64",
-    "cli": "bun run cli/index.ts",
+    "cli": "tsx cli/index.ts",
     "build:ext": "vite build && cp dist/promptotype.iife.js extension/overlay.js",
-    "test:app": "bun test/mock-app/serve.ts",
-    "test:app:nextjs": "bun test/mock-app/serve.ts --mode nextjs",
-    "test:proxy": "bun run cli/index.ts http://localhost:3000",
-    "postinstall": "node npm/postinstall.js"
+    "test:app": "tsx test/mock-app/serve.ts",
+    "test:app:nextjs": "tsx test/mock-app/serve.ts --mode nextjs",
+    "test:proxy": "tsx cli/index.ts http://localhost:3000",
+    "postinstall": "node npm/postinstall.js",
+    "prepublishOnly": "npm run build:all"
   },
   "files": [
+    "dist/cli.mjs",
     "dist/promptotype.iife.js",
-    "npm/postinstall.js",
-    "npm/cli.js",
     "cli/promptotype.md",
-    "bin/.gitkeep"
+    "npm/postinstall.js"
   ],
   "keywords": [
     "design",
@@ -38,6 +38,9 @@
   "author": "Nikos Kollaros",
   "license": "ISC",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/niforiskollaros/promptotype.git"
@@ -45,7 +48,13 @@
   "homepage": "https://github.com/niforiskollaros/promptotype",
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.0",
+    "esbuild": "^0.27.0",
+    "tsx": "^4.19.0",
     "typescript": "^6.0.2",
-    "vite": "^8.0.3"
+    "vite": "^8.0.3",
+    "ws": "^8.18.0",
+    "zod": "^3.25.0"
   }
 }

@@ -18,6 +18,8 @@ Promptotype replaces that with point-and-click annotations that include real com
 
 ## Installation
 
+Promptotype is distributed as a pure Node.js package — no platform binaries, no postinstall downloads, no Gatekeeper/signing issues on macOS. **Requires Node.js ≥ 22.**
+
 There are three ways to use Promptotype, depending on your setup:
 
 ### Option A: Chrome Extension + MCP Server (recommended)
@@ -31,10 +33,11 @@ npm install -g promptotype
 ```
 
 This automatically:
-- Downloads the correct platform binary
 - Installs the `/promptotype` slash command for Claude Code
 - Registers the MCP server in Claude Code
 - Auto-allows MCP tool permissions
+
+The install is a single-file Node.js bundle (~850 KB) — no per-platform binaries.
 
 **2. Load the Chrome extension**
 
@@ -83,17 +86,17 @@ Use the Chrome extension without Claude Code. Annotations are copied to clipboar
 
 ## Alternative Install Methods
 
-### curl (binary only, no MCP)
+### curl wrapper
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/niforiskollaros/promptotype/main/install.sh | bash
+curl -fsSL https://locusai.design/install.sh | bash
 ```
 
-Installs the binary to `~/.local/bin/promptotype` and registers slash commands for Claude Code, Codex, and Gemini CLI.
+This is a thin wrapper that checks for Node ≥ 22 and runs `npm install -g promptotype` on your behalf — the result is identical to installing via npm directly.
 
 ### Manual MCP registration
 
-If you installed via curl or the MCP registration didn't run automatically:
+If the MCP registration didn't run automatically (e.g. Claude Code wasn't on your `PATH` at install time):
 
 ```bash
 claude mcp add promptotype -s user -- promptotype serve
@@ -195,11 +198,13 @@ Examples:
 
 ## How It's Built
 
-Single IIFE bundle (~89KB, ~20KB gzip) built with Vite. Vanilla TypeScript, zero framework dependencies. Works in any browser, on any app.
+The browser overlay is a single IIFE bundle (~89 KB, ~20 KB gzip) built with Vite. Vanilla TypeScript, zero framework dependencies. Works in any browser, on any app.
+
+The CLI is a single Node.js ESM bundle (~850 KB) built with esbuild. Runs on any host with Node ≥ 22 — macOS, Linux, Windows, WSL. No platform binaries, no code signing, no postinstall downloads.
 
 Two distribution modes:
 - **Chrome Extension** -- injects overlay via Shadow DOM, sends annotations to MCP server
-- **CLI Proxy** -- Bun-compiled binary that proxies your app and injects the overlay
+- **CLI Proxy** -- Node.js bundle that proxies your app and injects the overlay
 
 The MCP server runs on port 4100 (HTTP for the extension, stdio for AI agents). The extension and MCP server communicate over localhost -- no external services, no cloud, all local.
 
@@ -207,12 +212,16 @@ The MCP server runs on port 4100 (HTTP for the extension, stdio for AI agents). 
 
 ```bash
 npm install
-npm run dev            # Dev server with sample app on port 3333
-npm run build          # Build dist/promptotype.iife.js
-npm run build:ext      # Build overlay + copy to extension/
-npm run build:cli      # Build CLI binary for current platform
-npm run build:cli:all  # Build for all 4 platforms
+npm run dev         # Vite dev server with sample app on port 3333
+npm run build       # Build dist/promptotype.iife.js (overlay)
+npm run build:cli   # Bundle dist/cli.mjs (CLI + MCP server)
+npm run build:all   # Build both (runs automatically before npm publish)
+npm run build:ext   # Build overlay + copy to extension/
+npm run test:app    # Start mock app on localhost:3000
+npm run test:proxy  # Run proxy against the mock app (via tsx)
 ```
+
+Requires Node ≥ 22 for development too — the CLI uses the built-in WebSocket client and fetch.
 
 ## License
 

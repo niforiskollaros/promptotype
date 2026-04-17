@@ -14,9 +14,9 @@ A browser overlay tool that lets anyone select UI elements in a locally running 
 
 **Vanilla TypeScript** — single IIFE bundle (~89KB, ~20KB gzip), zero framework dependencies. Works in any browser, on any app.
 
-Built with **Vite** (IIFE library mode). No React, no framework. Two distribution modes:
+Built with **Vite** (IIFE library mode) for the overlay and **esbuild** (single ESM bundle) for the CLI. No React, no framework. Two distribution modes:
 1. **Chrome Extension** (primary) — injects overlay via Shadow DOM, sends annotations to MCP server
-2. **CLI Proxy** (fallback) — Bun-compiled binary that proxies your app and injects the overlay
+2. **CLI Proxy** (fallback) — pre-bundled Node.js ESM script that proxies your app and injects the overlay. Requires Node ≥22 (for built-in WebSocket client + modern fetch).
 
 ```
 src/
@@ -38,7 +38,11 @@ cli/
 ├── index.ts                 # CLI entry — arg parsing, auto-detect, `serve` subcommand
 ├── server.ts                # Proxy server — inject overlay, session token auth, annotation API
 ├── mcp-server.ts            # MCP server — HTTP for extension + stdio for AI agents
+├── node-adapter.ts          # Fetch-style HTTP server on node:http (port-retry + upgrade hook)
 └── promptotype.md           # Slash command definition for AI coding agents
+
+scripts/
+└── build-cli.mjs            # Bundles cli/ into dist/cli.mjs via esbuild (shebang + createRequire banner)
 
 extension/
 ├── manifest.json            # Chrome Manifest V3
@@ -50,8 +54,7 @@ extension/
 └── icons/                   # Extension icons (16, 48, 128px)
 
 npm/
-├── postinstall.js           # Downloads binary, cleans up .gitkeep, installs slash command, registers MCP, auto-allows tools
-└── cli.js                   # Thin Node.js wrapper that execs the binary
+└── postinstall.js           # Installs slash command, registers MCP, auto-allows tools
 
 site/
 ├── index.html               # Landing page (locusai.design)
@@ -60,23 +63,23 @@ site/
 
 ## npm Package
 
-The npm package ships a lightweight ~26KB tarball. The heavy binary (~62MB) is downloaded per-platform by the postinstall script from GitHub Releases.
+The npm package ships a single ~190KB tarball (~980KB unpacked) — no platform binaries, no postinstall downloads. The CLI is a self-contained ESM bundle that runs on any Node ≥22.
 
 **What ships in the tarball:**
-- `dist/promptotype.iife.js` — overlay bundle
-- `npm/postinstall.js` — downloads binary + setup
-- `npm/cli.js` — thin wrapper that execs the binary
+- `dist/cli.mjs` — pre-bundled CLI (~850KB, includes MCP SDK + zod + ws + app code)
+- `dist/promptotype.iife.js` — overlay bundle (91KB, loaded at runtime by the proxy)
+- `npm/postinstall.js` — Claude Code setup
 - `cli/promptotype.md` — slash command definition
-- `bin/.gitkeep` — placeholder so `bin/` directory exists (postinstall cleans this up)
+- `package.json`, `LICENSE`, `README.md`
 
 **What postinstall does:**
-1. Removes `bin/.gitkeep` placeholder
-2. Downloads the correct platform binary from GitHub Releases (`v{version}`)
-3. Installs `/promptotype` slash command to `~/.claude/commands/`
-4. Registers MCP server in Claude Code (`claude mcp add`)
-5. Auto-allows `wait_for_annotations` and `get_annotations` MCP tools in `~/.claude/settings.json`
+1. Installs `/promptotype` slash command to `~/.claude/commands/`
+2. Registers MCP server in Claude Code (`claude mcp add`)
+3. Auto-allows `wait_for_annotations` and `get_annotations` MCP tools in `~/.claude/settings.json`
 
-**Dependencies:** All devDependencies only. `@modelcontextprotocol/sdk` is bundled into the Bun binary at build time, not needed at runtime by the npm package.
+Zero network calls — everything ships in the tarball. No per-platform builds, no code signing, no Gatekeeper issues on macOS.
+
+**Dependencies at build time:** `@modelcontextprotocol/sdk`, `zod`, `ws`, `esbuild`, `tsx`, `vite`. All bundled into `dist/cli.mjs` at build time via esbuild — zero runtime dependencies.
 
 ## Distribution
 
@@ -103,8 +106,8 @@ claude mcp add promptotype -s user -- promptotype serve
 
 ### CLI Proxy (fallback)
 ```bash
-# Install via curl
-curl -fsSL https://locusai.design/install.sh | bash
+# Install via npm (same command, works on any platform with Node ≥22)
+npm install -g promptotype
 
 # Run proxy
 promptotype http://localhost:3000
@@ -112,7 +115,7 @@ promptotype http://localhost:3000
 
 ## Releasing
 
-**Order matters:** GitHub release (with binaries) must exist **before** npm publish, because postinstall downloads binaries from `github.com/.../releases/download/v{version}/...`. If you publish to npm first, users get a 404 on binary download.
+No more binary CI choreography. `prepublishOnly` builds both the overlay and the CLI bundle before publish, and the tarball is fully self-contained.
 
 ### Full release checklist
 
@@ -126,12 +129,10 @@ git add package.json cli/mcp-server.ts
 git commit -m "Bump to v0.x.x"
 git push
 
-# 3. Tag and push — CI builds binaries and creates GitHub release
+# 3. Tag (CI creates GitHub release, no binaries needed)
 git tag v0.x.x && git push origin v0.x.x
 
-# 4. Wait for CI to finish (binaries must exist before npm publish)
-
-# 5. Publish to npm
+# 4. Publish to npm (prepublishOnly runs build:all automatically)
 npm publish
 ```
 
@@ -221,11 +222,11 @@ Markdown output includes explicit before→after diffs for all edits.
 npm run dev            # Start dev server with sample app (index.html) on port 3333
 npm run build          # Build dist/promptotype.iife.js
 npm run build:ext      # Build overlay + copy to extension/overlay.js
-npm run build:cli      # Build CLI binary for current platform
-npm run build:cli:all  # Build for all 4 platforms (darwin/linux x arm64/x64)
+npm run build:cli      # Bundle CLI into dist/cli.mjs via esbuild
+npm run build:all      # Build overlay + CLI bundle (runs before npm publish)
 npm run test:app       # Start mock app (static mode) on port 3000
 npm run test:app:nextjs # Start mock app (Next.js mode with basePath)
-npm run test:proxy     # Run proxy against localhost:3000
+npm run test:proxy     # Run proxy against localhost:3000 (via tsx)
 npm run preview        # Preview production build
 ```
 
@@ -242,6 +243,7 @@ npm run preview        # Preview production build
 | Before→after change diffs in output | Done (v0.2.0) |
 | Screenshot capture per annotation | Done (v0.2.0, extension only) |
 | npm package hygiene (postinstall fix, devDeps, no binary in tarball) | Done (v0.2.5) |
+| Node.js distribution (drops Bun binary, fixes macOS 26 SIGKILL) | Done (v0.3.0) |
 | Chrome Web Store submission | Next |
 | Remote MCP server (Railway) | Planned — always-on, no local process |
 | Companion Vite plugin for source location (React 19+) | Planned |

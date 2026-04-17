@@ -9,35 +9,22 @@ permissions:
   contents: write
 
 jobs:
-  build-and-release:
+  release:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: '22'
 
       - name: Install dependencies
-        run: bun install --ignore-scripts
+        run: npm ci --ignore-scripts
 
-      - name: Build overlay
-        run: bun run build
-
-      - name: Build CLI binaries
-        run: |
-          bun build cli/index.ts --outfile dist/promptotype-darwin-arm64 --compile --target=bun-darwin-arm64
-          bun build cli/index.ts --outfile dist/promptotype-darwin-x64 --compile --target=bun-darwin-x64
-          bun build cli/index.ts --outfile dist/promptotype-linux-x64 --compile --target=bun-linux-x64
-          bun build cli/index.ts --outfile dist/promptotype-linux-arm64 --compile --target=bun-linux-arm64
+      - name: Build overlay + CLI bundle
+        run: npm run build:all
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            dist/promptotype-darwin-arm64
-            dist/promptotype-darwin-x64
-            dist/promptotype-linux-x64
-            dist/promptotype-linux-arm64
           generate_release_notes: true
