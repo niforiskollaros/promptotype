@@ -43,8 +43,9 @@ The install is a single-file Node.js bundle (~850 KB) — no per-platform binari
 
 The extension is not yet on the Chrome Web Store. To install manually:
 
-1. Clone or download this repo
-2. Build the extension: `npm run build:ext`
+1. Clone this repo: `git clone https://github.com/niforiskollaros/promptotype.git && cd promptotype`
+2. Install deps and build: `npm install && npm run build:ext`
+   - This creates `extension/overlay.js` (the built overlay bundle Chrome will load).
 3. Open `chrome://extensions/` in Chrome
 4. Enable **Developer mode** (top-right toggle)
 5. Click **Load unpacked** and select the `extension/` directory
