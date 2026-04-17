@@ -104,12 +104,12 @@ claude mcp add promptotype -s user -- promptotype serve
 
 ## Updating
 
-Promptotype checks for new versions automatically. Whenever you run the CLI in a terminal, it checks the npm registry in the background (once per 24 hours, cached) and prints a small notice on stderr if a newer version is available:
+Starting in **v0.3.1**, `promptotype` checks for new versions automatically when you run it in an interactive terminal. A notice like this prints to stderr when a newer version is available:
 
 ```
 ╭──────────────────────────────────────╮
 │                                      │
-│   Update available 0.3.1 → 0.4.0     │
+│   Update available 0.3.2 → 0.4.0     │
 │   Run npm i -g promptotype to update │
 │                                      │
 ╰──────────────────────────────────────╯
@@ -121,19 +121,34 @@ To update, run whichever of these fits your setup:
 # Latest stable
 npm install -g promptotype
 
-# Or the npm-native "update" alias
+# npm-native "update" alias (respects the range in your package.json)
 npm update -g promptotype
 
 # Pin to a specific version
-npm install -g promptotype@0.3.1
+npm install -g promptotype@0.3.2
 ```
 
-The check is silent when piped (so it won't clutter scripts or the MCP stdio channel), and you can suppress it entirely with `NO_UPDATE_NOTIFIER=1` in your environment.
-
-To check your current version:
+Check your current version:
 
 ```bash
 npm ls -g promptotype
+```
+
+### How the notifier behaves (the fine print)
+
+- **First run after a new release may not show the box.** The check runs in a detached background process and caches the result for 24 hours. The box only appears once that cache has been written — typically on the second run after a new version drops, not the first.
+- **Only shown on interactive TTYs.** If stderr isn't a terminal (CI, piped output, the MCP stdio channel Claude Code uses), the box is suppressed so it can't pollute logs or break the JSON-RPC stream.
+- **Cached per user for 24h.** Location: `~/Library/Preferences/update-notifier-promptotype/` on macOS, `~/.config/update-notifier-promptotype/` on Linux.
+- **Disable entirely:** set `NO_UPDATE_NOTIFIER=1` in your shell profile, or pass `--no-update-notifier`.
+- **Upgrades from 0.2.x won't announce themselves.** The notifier ships inside the CLI, so 0.2.x users have to upgrade once manually to land on a version that can notify them going forward.
+
+### Why upgrading from 0.2.x needs a one-time manual step
+
+The 0.2.x install pointed the Claude Code MCP registration at a per-platform Bun binary that no longer exists. Since v0.3.2 the postinstall automatically re-registers the MCP server on every install, so the first `npm install -g promptotype` from an old version heals the registration for you. If you're on an even older version and the MCP server shows `✗ Failed to connect` in `claude mcp list`, run:
+
+```bash
+claude mcp remove promptotype -s user
+claude mcp add promptotype -s user -- promptotype serve
 ```
 
 ## Usage with Claude Code

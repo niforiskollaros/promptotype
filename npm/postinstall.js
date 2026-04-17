@@ -37,6 +37,16 @@ function installSlashCommand() {
 function registerMcpServer() {
   try {
     execSync('which claude', { stdio: 'ignore' });
+
+    // Clear any prior registration so upgrades from older versions (which may
+    // have pointed at a Bun binary path or a local source file) end up with a
+    // clean, correct entry. Ignored if no prior registration exists.
+    try {
+      execSync('claude mcp remove promptotype -s user', { stdio: 'ignore' });
+    } catch {
+      // No prior registration — fine.
+    }
+
     execSync('claude mcp add promptotype -s user -- promptotype serve', { stdio: 'ignore' });
     console.log('Registered promptotype MCP server in Claude Code (global)');
   } catch {

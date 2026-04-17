@@ -8,7 +8,7 @@ A browser overlay tool that lets anyone select UI elements in a locally running 
 **Repo:** https://github.com/niforiskollaros/promptotype
 **npm:** [promptotype](https://www.npmjs.com/package/promptotype)
 **Landing page:** https://locusai.design
-**Current version:** 0.3.1
+**Current version:** 0.3.2
 
 ## Architecture
 
@@ -82,6 +82,10 @@ Zero network calls — everything ships in the tarball. No per-platform builds, 
 **Dependencies at build time:** `@modelcontextprotocol/sdk`, `zod`, `ws`, `update-notifier`, `esbuild`, `tsx`, `vite`. All bundled into `dist/cli.mjs` at build time via esbuild — zero runtime dependencies.
 
 **Update notifications:** The CLI uses `update-notifier` to check npm for newer versions once per 24 hours (cached in `~/Library/Preferences/update-notifier-promptotype` on macOS, `~/.config/` on Linux). The check runs in the background, writes to stderr only (never stdout — that would break MCP stdio JSON-RPC), and only shows the box to interactive TTYs. Users can suppress with `NO_UPDATE_NOTIFIER=1`.
+
+Because the notifier lives inside the CLI, the first release that ships it (0.3.1) can't announce itself — existing 0.2.x users have to upgrade once manually. The notifier is also run only on interactive TTYs, and the first run after a new release may not show the box (the registry check is a detached background fetch whose result lands in the cache for the *next* invocation).
+
+**Postinstall self-heal:** Since 0.3.2 the postinstall calls `claude mcp remove promptotype -s user` (ignored on failure) before `claude mcp add`. This ensures upgrades from older installs — which may have had stale registrations pointing at a Bun binary path or a local source file — end up with a correct `promptotype serve` entry.
 
 ## Distribution
 
@@ -247,6 +251,7 @@ npm run preview        # Preview production build
 | npm package hygiene (postinstall fix, devDeps, no binary in tarball) | Done (v0.2.5) |
 | Node.js distribution (drops Bun binary, fixes macOS 26 SIGKILL) | Done (v0.3.0) |
 | Update notifications (update-notifier on CLI startup) | Done (v0.3.1) |
+| Postinstall self-heals stale MCP registrations | Done (v0.3.2) |
 | Chrome Web Store submission | Next |
 | Remote MCP server (Railway) | Planned — always-on, no local process |
 | Companion Vite plugin for source location (React 19+) | Planned |
