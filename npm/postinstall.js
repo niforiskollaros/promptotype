@@ -36,7 +36,10 @@ function installSlashCommand() {
 
 function registerMcpServer() {
   try {
-    execSync('which claude', { stdio: 'ignore' });
+    // `claude --version` works identically on macOS, Linux, and Windows (cmd,
+    // PowerShell, Git Bash). Using `which claude` would have failed on native
+    // Windows shells where `which` doesn't exist.
+    execSync('claude --version', { stdio: 'ignore' });
 
     // Clear any prior registration so upgrades from older versions (which may
     // have pointed at a Bun binary path or a local source file) end up with a

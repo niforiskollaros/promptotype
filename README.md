@@ -18,7 +18,7 @@ Promptotype replaces that with point-and-click annotations that include real com
 
 ## Installation
 
-Promptotype is distributed as a pure Node.js package — no platform binaries, no postinstall downloads, no Gatekeeper/signing issues on macOS. **Requires Node.js ≥ 22.**
+Promptotype is distributed as a pure Node.js package — no platform binaries, no postinstall downloads, no Gatekeeper/signing issues on macOS. **Requires Node.js ≥ 22.** Works on macOS, Linux, and Windows (PowerShell, Command Prompt, or Git Bash).
 
 There are three ways to use Promptotype, depending on your setup:
 

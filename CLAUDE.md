@@ -8,7 +8,7 @@ A browser overlay tool that lets anyone select UI elements in a locally running 
 **Repo:** https://github.com/niforiskollaros/promptotype
 **npm:** [promptotype](https://www.npmjs.com/package/promptotype)
 **Landing page:** https://locusai.design
-**Current version:** 0.3.2
+**Current version:** 0.3.3
 
 ## Architecture
 
@@ -252,6 +252,7 @@ npm run preview        # Preview production build
 | Node.js distribution (drops Bun binary, fixes macOS 26 SIGKILL) | Done (v0.3.0) |
 | Update notifications (update-notifier on CLI startup) | Done (v0.3.1) |
 | Postinstall self-heals stale MCP registrations | Done (v0.3.2) |
+| Windows support (`which` → `claude --version`, cross-platform build:ext, prebuilt extension zip on GitHub releases) | Done (v0.3.3) |
 | Chrome Web Store submission | Next |
 | Remote MCP server (Railway) | Planned — always-on, no local process |
 | Companion Vite plugin for source location (React 19+) | Planned |

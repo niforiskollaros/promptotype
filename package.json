@@ -1,6 +1,6 @@
 {
   "name": "promptotype",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Browser overlay that lets you annotate UI elements and send structured feedback to AI coding agents",
   "main": "dist/promptotype.iife.js",
   "bin": {
@@ -13,7 +13,7 @@
     "build:all": "npm run build && npm run build:cli",
     "preview": "vite preview",
     "cli": "tsx cli/index.ts",
-    "build:ext": "vite build && cp dist/promptotype.iife.js extension/overlay.js",
+    "build:ext": "vite build && node -e \"require('node:fs').copyFileSync('dist/promptotype.iife.js', 'extension/overlay.js')\"",
     "test:app": "tsx test/mock-app/serve.ts",
     "test:app:nextjs": "tsx test/mock-app/serve.ts --mode nextjs",
     "test:proxy": "tsx cli/index.ts http://localhost:3000",

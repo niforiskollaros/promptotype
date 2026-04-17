@@ -11,6 +11,9 @@ export default defineConfig({
     },
     outDir: 'dist',
     minify: false,
+    // Don't wipe dist/ — the esbuild CLI bundle (dist/cli.mjs) lives here too
+    // and `build:ext` must not remove it.
+    emptyOutDir: false,
   },
   server: {
     port: 3333,
