@@ -83,3 +83,27 @@
 **Context**: Codex adversarial review flagged that any JS on the proxied page could forge annotation submissions to the CLI.
 **Decision**: Generate a crypto.randomUUID() per proxy session, inject via bootstrap.js, validate on every annotation POST.
 **Rationale**: The overlay is the only legitimate submitter. The token is injected only into the bootstrap file served by the proxy, not accessible to the target app's own scripts.
+
+## 2026-04-17: Drop Bun Binary, Ship as Pure Node.js ESM
+
+**Context**: macOS 26 Tahoe tightened Gatekeeper/amfid enforcement. Unsigned/ad-hoc-signed binaries (what `bun build --compile` produces) now get SIGKILL'd on first launch. Confirmed industry-wide — Codex CLI, Claude CLI, UV, and others all hit the same problem and patched in CI.
+**Decision**: Drop the per-platform Bun single-file executable. Bundle the CLI with esbuild as a single Node.js ESM file (`dist/cli.mjs`). Require Node ≥22 (built-in `WebSocket` client, stable fetch, native ESM top-level await). Swap `Bun.serve` for a `node:http`-based fetch-style adapter, `ws` package for the server side of the WebSocket proxy, and Node's native `WebSocket` global for the upstream client.
+**Rationale**: Every major npm CLI (Vercel, Firebase, Stripe, Prisma, npm itself) ships as pure Node for exactly this reason — Node is already signed by Apple on every user's machine, so the signing problem disappears. Tarball drops from 26KB + 62MB binary download → 190KB self-contained. Windows becomes supported as a side effect (the Bun binary never had Windows support). The only real cost is requiring Node ≥22 on the user's machine — reasonable given Node 20 reached EOL the same day (2026-04-30).
+
+## 2026-04-17: Bundle Everything With esbuild (ESM + createRequire Banner)
+
+**Context**: Needed to pick between bundling all deps into a single file vs. shipping a `dependencies` list that npm resolves at install time.
+**Decision**: Bundle with esbuild. ESM output (preserves top-level await in `cli/index.ts`). Banner adds `createRequire` so CJS transitive deps (`ws` calls `require('events')` internally) work inside the ESM bundle.
+**Rationale**: Bundling gives us a single-file install — no runtime `node_modules` resolution, works identically on every host, survives weird npm/pnpm/yarn setups. ESM is preferred because CJS output would force us to wrap all top-level await in an async `main()` (small refactor but noisier). The banner is the known canonical workaround for CJS-in-ESM bundle errors.
+
+## 2026-04-17: Distribute Chrome Extension as Prebuilt Zip via GitHub Releases
+
+**Context**: Internal testers include PMs who may not have git or Node installed. Making them clone the repo and run `npm install && npm run build:ext` before they can load the extension is a significant barrier.
+**Decision**: Add a CI step that builds the extension on every tag push and attaches `promptotype-chrome-extension.zip` to the GitHub release. Guide non-technical users to download → unzip → load unpacked.
+**Rationale**: Zero dependency on local build tools for the extension path. Technical users can still build from source if they prefer. Until Chrome Web Store submission is done, this is the lowest-friction install.
+
+## 2026-04-17: Update Notifications via update-notifier, Not Auto-Update
+
+**Context**: Once we control the install channel fully (npm), we can nudge users toward new versions. Decision is whether to notify, auto-update, or do nothing.
+**Decision**: Ship `update-notifier` — background fetch once per 24h, prints a notice on stderr only, TTY-gated. No auto-update; user runs `npm install -g promptotype` when they see the nudge.
+**Rationale**: Auto-update breaks in corporate environments (permission errors, IT policies) and erodes trust — CLIs shouldn't rewrite themselves. The notifier is the de facto npm-CLI pattern (Vercel, Firebase, Stripe, npm itself). First-version-ships-the-notifier caveat documented: existing 0.2.x users can't be notified, they learn via README/word of mouth once.

@@ -28,15 +28,37 @@ async function checkMcpHealth(port = MCP_DEFAULT_PORT) {
 // Inject overlay into the active tab
 async function injectOverlay(tabId) {
   try {
-    // Inject the content script that creates Shadow DOM and loads the overlay
-    await chrome.scripting.executeScript({
+    // Step 1: create Shadow DOM in MAIN world and store refs on window
+    const [setupResult] = await chrome.scripting.executeScript({
       target: { tabId },
-      func: injectOverlayIntoPage,
-      args: [chrome.runtime.getURL('overlay.js'), MCP_DEFAULT_PORT],
-      world: 'MAIN', // Run in the page's JS context (needed for DOM access)
+      func: setupShadowDOM,
+      args: [MCP_DEFAULT_PORT],
+      world: 'MAIN',
     });
 
-    // Update badge
+    // If already injected, setupShadowDOM toggled the overlay — nothing more to do.
+    if (setupResult?.result?.alreadyInjected) {
+      chrome.action.setBadgeText({ text: 'ON', tabId });
+      chrome.action.setBadgeBackgroundColor({ color: '#7C3AED', tabId });
+      return { success: true };
+    }
+
+    // Step 2: inject overlay.js directly via the scripting API (bypasses page CSP).
+    // This works on both Mac and Windows — unlike a dynamic <script src="chrome-extension://…">
+    // which can be blocked by the page's Content-Security-Policy on Windows.
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ['overlay.js'],
+      world: 'MAIN',
+    });
+
+    // Step 3: initialize the overlay with the Shadow DOM refs stored in step 1
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      func: initOverlay,
+      world: 'MAIN',
+    });
+
     chrome.action.setBadgeText({ text: 'ON', tabId });
     chrome.action.setBadgeBackgroundColor({ color: '#7C3AED', tabId });
 
@@ -46,24 +68,20 @@ async function injectOverlay(tabId) {
   }
 }
 
-// This function runs in the PAGE context (world: 'MAIN')
-function injectOverlayIntoPage(overlayUrl, mcpPort) {
-  // Prevent double injection
+// Runs in MAIN world: sets up Shadow DOM host and stores refs on window for initOverlay.
+function setupShadowDOM(mcpPort) {
   if (document.getElementById('promptotype-root')) {
-    // Already injected — just toggle
     if (window.Promptotype) {
       window.Promptotype.toggle();
     }
-    return;
+    return { alreadyInjected: true };
   }
 
-  // Create Shadow DOM host
   const host = document.createElement('div');
   host.id = 'promptotype-root';
   host.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;z-index:2147483647;pointer-events:none;';
   const shadow = host.attachShadow({ mode: 'open' });
 
-  // Container inside shadow for overlay UI elements
   const container = document.createElement('div');
   container.id = 'pt-shadow-container';
   container.style.cssText = 'all:initial;pointer-events:auto;';
@@ -71,20 +89,26 @@ function injectOverlayIntoPage(overlayUrl, mcpPort) {
 
   document.body.appendChild(host);
 
-  // Set MCP mode globals
   window.__PT_MCP__ = true;
   window.__PT_MCP_PORT__ = mcpPort;
 
-  // Load the overlay IIFE
-  const script = document.createElement('script');
-  script.src = overlayUrl;
-  script.onload = () => {
-    // Initialize with Shadow DOM
-    if (window.Promptotype && window.Promptotype.initWithShadowDOM) {
-      window.Promptotype.initWithShadowDOM(shadow, container, host);
-    }
-  };
-  document.head.appendChild(script);
+  // Store refs so initOverlay (next executeScript call) can find them
+  window.__PT_SHADOW__ = shadow;
+  window.__PT_CONTAINER__ = container;
+  window.__PT_HOST__ = host;
+
+  return { alreadyInjected: false };
+}
+
+// Runs in MAIN world AFTER overlay.js has defined window.Promptotype.
+function initOverlay() {
+  if (window.Promptotype && window.Promptotype.initWithShadowDOM) {
+    window.Promptotype.initWithShadowDOM(
+      window.__PT_SHADOW__,
+      window.__PT_CONTAINER__,
+      window.__PT_HOST__
+    );
+  }
 }
 
 // Remove overlay from the active tab
@@ -100,6 +124,9 @@ async function removeOverlay(tabId) {
         if (host) host.remove();
         delete window.__PT_MCP__;
         delete window.__PT_MCP_PORT__;
+        delete window.__PT_SHADOW__;
+        delete window.__PT_CONTAINER__;
+        delete window.__PT_HOST__;
       },
       world: 'MAIN',
     });
@@ -135,7 +162,6 @@ async function cropScreenshot(fullDataUrl, rect, dpr) {
 
 // Listen for messages from popup and content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  // Screenshot capture request from content bridge
   if (message.type === 'capture-screenshot') {
     const tabId = sender.tab?.id;
     if (!tabId) {
@@ -160,7 +186,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === 'check-health') {
     checkMcpHealth(message.port || MCP_DEFAULT_PORT).then(sendResponse);
-    return true; // async response
+    return true;
   }
 
   if (message.type === 'inject') {
